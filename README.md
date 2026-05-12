@@ -42,7 +42,7 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 | `roles`      | Who can see the page when signed in (string or array); omit or empty = any mapped user. `admin` in `HANDBOOK_ROLE_MAP` sees everything. |
 | `order`      | Sort order within a category (number) |
 
-**Deploy / automatic updates:** The least convoluted setup is **Cloudflare Pages → Connect to Git** → pick the branch you publish from (e.g. `main`). Every **push** (including “edit this file” commits on GitHub) triggers **`npm run build`** and deploys. No extra CI unless you want it. Build settings: **Framework preset** “Astro” or custom **build command** `npm run build`, **output directory** `dist`, **Node** 20.x. Set the same env vars as production (see `.env.example`). For a smoke test without Google, use **`DISABLE_AUTH=true`** on a preview branch only.
+**Deploy / automatic updates:** **Cloudflare Pages → Connect to Git** → production branch (e.g. `main`). Every **push** runs **`npm run build`**. If your Pages setup **requires a deploy command**, use **`npm run deploy`** (runs **`wrangler pages deploy`**, which uploads `dist` including Astro’s `dist/_worker.js`). Do **not** use `wrangler deploy`—that targets a standalone Worker and fails without a Worker `main` entry. **`wrangler.jsonc`** must use **`name`** equal to your **Pages project name** in the dashboard (change `handbook` if yours differs), and **`pages_build_output_dir`** `./dist` must match Astro’s output. To sync bindings from Cloudflare, run **`npx wrangler pages download config`** locally (see [Wrangler configuration for Pages](https://developers.cloudflare.com/pages/functions/wrangler-configuration/)). Build output directory in the UI can stay **`dist`**, **Node** 20.x. Set production env vars (see `.env.example`). For a smoke test without Google, use **`DISABLE_AUTH=true`** on a preview branch only.
 
 ## Scripts
 
@@ -51,6 +51,7 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 | `npm run dev`    | Dev server         |
 | `npm run build`  | Production build   |
 | `npm run preview`| Preview production |
+| `npm run deploy` | Upload `dist` to Cloudflare Pages via Wrangler (when deploy step is required) |
 
 ## Stack
 

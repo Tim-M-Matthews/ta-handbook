@@ -1,6 +1,6 @@
 ---
 import HandbookLayout from "../layouts/HandbookLayout.astro";
-import { isAuthBypassed } from "../lib/dev-auth";
+import { isAuthBypassed, isLocalDevPersona } from "../lib/dev-auth";
 import { listMetaForRoles } from "../lib/content";
 
 const session = Astro.locals.session!;
@@ -14,6 +14,7 @@ for (const p of pages) {
 }
 const categories = [...byCategory.keys()].sort((a, b) => a.localeCompare(b));
 const bypass = isAuthBypassed();
+const localPersona = isLocalDevPersona();
 ---
 
 <HandbookLayout title="Handbook">
@@ -21,10 +22,14 @@ const bypass = isAuthBypassed();
   <p class="lead">
     {
       bypass ? (
-        import.meta.env.DEV ? (
+        localPersona ? (
           <>
-            <strong>Local dev:</strong> sign-in is off; you see every page. Edit{" "}
-            <code>content/pages</code> and save—refresh the browser to view changes.
+            <strong>Local dev:</strong> signed in as{" "}
+            <strong>{session.user?.email ?? "—"}</strong> (no Google OAuth). Page access
+            follows <code>HANDBOOK_ROLE_MAP</code> like production. Roles:{" "}
+            <strong>{roles.length ? roles.join(", ") : "—"}</strong>. Edit{" "}
+            <code>content/pages</code> and save—refresh to view changes. Optional: set{" "}
+            <code>DEV_AUTH_EMAIL</code> in <code>.env</code> to impersonate another user.
           </>
         ) : (
           <>

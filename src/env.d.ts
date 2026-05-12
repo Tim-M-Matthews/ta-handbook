@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   /** When `"true"`, same as local dev: no Google sign-in; synthetic admin session (for preview deploys). */
   readonly DISABLE_AUTH?: string;
+  /** During `astro dev`, override the default local user email (`tim.matthews@triangleact.com`). */
+  readonly DEV_AUTH_EMAIL?: string;
 }
 
 interface ImportMeta {

@@ -1,6 +1,6 @@
 # Triangle ACT Handbook (Astro)
 
-Internal handbook: **Markdown in `content/pages/`** (managed in **GitHub**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** (`HANDBOOK_ROLE_MAP`), and **server-side search** (Fuse.js). No database and no separate CMS—editors use the GitHub web UI or Desktop; deploys (e.g. **Cloudflare Pages**) build from the repo.
+Internal handbook: **Markdown in `content/pages/`** (GitHub + optional **[Pages CMS](https://pagescms.org/)** UI), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** (`HANDBOOK_ROLE_MAP`), and **server-side search** (Fuse.js). No database—content lives in the repo; deploys build from Git.
 
 ## Requirements
 
@@ -25,13 +25,24 @@ npm run dev
 
 If you previously used another framework in this folder, delete `node_modules` (and optionally `package-lock.json`) before `npm install` so dependencies match Astro only.
 
-Open [http://localhost:4321](http://localhost:4321). During **`astro dev`**, Google sign-in is **skipped** automatically (see `src/lib/dev-auth.ts`). There is **no Google Search Console HTML verification** in this project—only optional **Google OAuth** for sign-in when auth is enabled.
+Open [http://localhost:4321](http://localhost:4321). During **`astro dev`**, you are **signed in automatically** as **`tim.matthews@triangleact.com`** (no Google OAuth). Roles come from **`HANDBOOK_ROLE_MAP`** in `.env`, same as production—add that email to the map to mirror prod access; if the email is missing, local dev grants **`admin`** and logs a warning. Override the email with **`DEV_AUTH_EMAIL`**. Google OAuth is still used whenever the app runs **without** dev mode and **without** `DISABLE_AUTH` (set `AUTH_GOOGLE_*` and use redirect `{AUTH_URL}/api/auth/callback/google` in Google Cloud Console). There is **no Google Search Console HTML verification** in this project.
 
-To test a **production build or Cloudflare Pages preview** without configuring Google OAuth, set **`DISABLE_AUTH=true`** in that environment (see `.env.example`). The handbook behaves like dev: no login, synthetic admin, all pages visible. **Remove `DISABLE_AUTH` for real production** if the site must require Google sign-in.
+To test a **production build or Cloudflare preview** without configuring Google OAuth, set **`DISABLE_AUTH=true`** in that environment (see `.env.example`). You get a synthetic admin and all pages. **Remove `DISABLE_AUTH` for real production** if the site must require Google sign-in.
 
 ## Content (GitHub)
 
-Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Use the **GitHub** “Edit” flow or **GitHub Desktop**; merge to the branch your host builds from (e.g. `main`) to publish.
+Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Merge to the branch your host builds from (e.g. `main`) to publish.
+
+### Pages CMS (optional UI)
+
+This repo includes **[`.pages.yml`](.pages.yml)** for **[Pages CMS](https://pagescms.org/)** — a free, open-source editor that commits directly to GitHub (see [introduction](https://pagescms.org/docs/) and [configuration](https://pagescms.org/docs/configuration)).
+
+1. Open **[app.pagescms.org](https://app.pagescms.org/)** and sign in with GitHub.
+2. Install the **Pages CMS GitHub App** for the account or org that owns this repository.
+3. Open this repo and branch; Pages CMS reads **`.pages.yml`** automatically.
+4. Use **Handbook pages** to edit frontmatter and page content (**rich text** in Pages CMS, stored as HTML; GitHub-only edits can stay Markdown). Use **Media** for uploads (stored under **`public/handbook-media/`**, referenced as **`/handbook-media/...`**).
+
+Frontmatter and roles behave the same as when editing files in GitHub.
 
 **Frontmatter** (optional fields at the top of each file):
 
@@ -41,6 +52,8 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 | `category`   | Section label on the handbook home |
 | `roles`      | Who can see the page when signed in (string or array); omit or empty = any mapped user. `admin` in `HANDBOOK_ROLE_MAP` sees everything. |
 | `order`      | Sort order within a category (number) |
+
+The **page body** (below the `---` frontmatter) may be **Markdown** (legacy / GitHub edits) or **HTML** (saved from Pages CMS rich text); the site supports both.
 
 **Deploy / automatic updates:** Astro’s current [Cloudflare deploy guide](https://docs.astro.build/en/guides/deploy/cloudflare/) targets **Cloudflare Workers** (static assets + SSR Worker), not the Pages-only upload path. This repo uses **`npm run build`** then **`npm run deploy`** (`wrangler deploy`) with **`wrangler.jsonc`** (`name` **`ta-handbook`**, **`main`**: built handler, **`assets.directory`**: `./dist`). **`public/.assetsignore`** lists **`_worker.js`** so Wrangler does not treat the server bundle as a public static file (see [withastro/astro#13582](https://github.com/withastro/astro/issues/13582)). **`nodejs_compat`** is enabled for server-side dependencies.
 

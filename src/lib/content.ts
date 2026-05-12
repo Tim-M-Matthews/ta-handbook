@@ -1,4 +1,5 @@
 import matter from "gray-matter";
+import { plainTextFromBody } from "./body-render";
 import { userCanViewPage } from "./roles";
 
 export type HandbookMeta = {
@@ -89,7 +90,7 @@ export function listMetaForRoles(userRoles: string[]): HandbookMeta[] {
 }
 
 export function excerptFromBody(body: string, max = 220): string {
-  const flat = body.replace(/\s+/g, " ").trim();
+  const flat = plainTextFromBody(body).replace(/\s+/g, " ").trim();
   if (flat.length <= max) return flat;
   return `${flat.slice(0, max)}…`;
 }

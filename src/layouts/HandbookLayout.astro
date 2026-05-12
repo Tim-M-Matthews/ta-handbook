@@ -14,8 +14,8 @@ if (!bypass && !session?.user) {
   return Astro.redirect("/login");
 }
 
-const email = bypass ? authBypassLabel() : (session!.user?.email ?? "");
-const roles = bypass ? ["admin"] : (session!.user?.roles ?? []);
+const email = session?.user?.email ?? "";
+const roles = session?.user?.roles ?? [];
 ---
 
 <!doctype html>
@@ -46,7 +46,7 @@ const roles = bypass ? ["admin"] : (session!.user?.roles ?? []);
         <div class="shell__user">
           <span
             class="shell__email"
-            title={bypass ? "Google OAuth not used while auth is bypassed" : roles.join(", ")}
+            title={bypass ? authBypassLabel() : roles.join(", ")}
             >{email}</span>
           {
             bypass ? null : (

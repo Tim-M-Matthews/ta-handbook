@@ -1,6 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { getSession } from "auth-astro/server";
-import { devBypassSession, isAuthBypassed } from "./lib/dev-auth";
+import { devAuthSessionForBypass, isAuthBypassed } from "./lib/dev-auth";
 
 function isLikelyStaticAsset(pathname: string): boolean {
   return /\.[a-z0-9]{1,12}$/i.test(pathname);
@@ -8,7 +8,7 @@ function isLikelyStaticAsset(pathname: string): boolean {
 
 export const onRequest = defineMiddleware(async (context, next) => {
   if (isAuthBypassed()) {
-    context.locals.session = devBypassSession();
+    context.locals.session = devAuthSessionForBypass();
     if (context.url.pathname === "/login") {
       return context.redirect("/");
     }

@@ -1,10 +1,8 @@
 ---
 import HandbookLayout from "../../layouts/HandbookLayout.astro";
-import { marked } from "marked";
+import { renderHandbookBody } from "../../lib/body-render";
 import { getDocBySlug } from "../../lib/content";
 import { userCanViewPage } from "../../lib/roles";
-
-marked.setOptions({ gfm: true });
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -18,7 +16,7 @@ if (!doc || !userCanViewPage(userRoles, doc.roles)) {
   return new Response(null, { status: 404 });
 }
 
-const html = marked.parse(doc.body) as string;
+const html = renderHandbookBody(doc.body);
 ---
 
 <HandbookLayout title={`${doc.title} — Handbook`}>

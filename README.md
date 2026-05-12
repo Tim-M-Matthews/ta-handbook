@@ -1,65 +1,60 @@
-# Triangle ACT Handbook
+# Triangle ACT Handbook (Astro)
 
-Lightweight internal handbook: Google sign-in, env-based roles, markdown content in git, category index, and role-aware search.
-
-## Own repository
-
-This folder lives under the `triangle-act` workspace for convenience. For production, move it to a separate git repository (or use `git subtree split`) and deploy only this app to **handbook.triangleact.com**.
+Internal handbook: **Markdown in `content/pages/`** (managed in **GitHub**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** (`HANDBOOK_ROLE_MAP`), and **server-side search** (Fuse.js). No database and no separate CMS—editors use the GitHub web UI or Desktop; deploys (e.g. **Cloudflare Pages**) build from the repo.
 
 ## Requirements
 
-- Node.js 18.18+ (20 LTS recommended)
+- Node 18.18+
 
 ## Setup
 
-1. Copy environment variables:
+1. Copy `.env.example` to `.env`. You must set **`AUTH_SECRET`** (Auth.js will show a generic “server configuration” error in the browser until this is set). Also set:
 
-   ```bash
-   cp .env.example .env.local
-   ```
+   - `AUTH_URL` — e.g. `http://localhost:4321` for local dev
+   - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — Google OAuth client  
+     Authorized redirect URI: `{AUTH_URL}/api/auth/callback/google`
+   - `HANDBOOK_ROLE_MAP` — JSON map of lowercase email → role string or array (see `.env.example`)
 
-2. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an OAuth 2.0 Client ID (Web application).
+2. Install and run:
 
-   - **Authorized JavaScript origins**: `https://handbook.triangleact.com`, `http://localhost:3000`
-   - **Authorized redirect URIs**: `https://handbook.triangleact.com/api/auth/callback/google`, `http://localhost:3000/api/auth/callback/google`
+```bash
+rm -rf node_modules
+npm install
+npm run dev
+```
 
-3. Set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `AUTH_SECRET` in `.env.local`. Set `AUTH_URL` to the site origin (required in production).
+If you previously used another framework in this folder, delete `node_modules` (and optionally `package-lock.json`) before `npm install` so dependencies match Astro only.
 
-4. Set `HANDBOOK_ROLE_MAP` to a JSON object mapping each allowed Google email to one or more roles, for example:
+Open [http://localhost:4321](http://localhost:4321). During **`astro dev`**, Google sign-in is **skipped** automatically (see `src/lib/dev-auth.ts`). There is **no Google Search Console HTML verification** in this project—only optional **Google OAuth** for sign-in when auth is enabled.
 
-   ```json
-   {"lorraine@triangleact.com":["clinical","admin"],"tim@triangleact.com":["admin"]}
-   ```
+To test a **production build or Cloudflare Pages preview** without configuring Google OAuth, set **`DISABLE_AUTH=true`** in that environment (see `.env.example`). The handbook behaves like dev: no login, synthetic admin, all pages visible. **Remove `DISABLE_AUTH` for real production** if the site must require Google sign-in.
 
-   Emails not listed **cannot** sign in.
+## Content (GitHub)
 
-5. Run locally:
+Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Use the **GitHub** “Edit” flow or **GitHub Desktop**; merge to the branch your host builds from (e.g. `main`) to publish.
 
-   ```bash
-   npm install
-   npm run dev
-   ```
+**Frontmatter** (optional fields at the top of each file):
 
-## Content
+| Field        | Purpose |
+| ------------ | ------- |
+| `title`      | Page title (defaults to filename if omitted) |
+| `category`   | Section label on the handbook home |
+| `roles`      | Who can see the page when signed in (string or array); omit or empty = any mapped user. `admin` in `HANDBOOK_ROLE_MAP` sees everything. |
+| `order`      | Sort order within a category (number) |
 
-- Markdown lives in `content/pages/`. Use subfolders for URL structure (`content/pages/hr/onboarding.md` → `/p/hr/onboarding`).
-- Frontmatter:
-  - `title` — display title (defaults to filename).
-  - `category` — grouping on the home page (defaults to `General`).
-  - `roles` — optional string or list; if set, the user must have at least one of these roles **or** have the `admin` role. Omit or leave empty for “any signed-in user.”
-  - `order` — optional number for sorting within a category.
+**Deploy / automatic updates:** The least convoluted setup is **Cloudflare Pages → Connect to Git** → pick the branch you publish from (e.g. `main`). Every **push** (including “edit this file” commits on GitHub) triggers **`npm run build`** and deploys. No extra CI unless you want it. Build settings: **Framework preset** “Astro” or custom **build command** `npm run build`, **output directory** `dist`, **Node** 20.x. Set the same env vars as production (see `.env.example`). For a smoke test without Google, use **`DISABLE_AUTH=true`** on a preview branch only.
 
-## Roles
+## Scripts
 
-- **`admin`**: can open every page regardless of `roles` in frontmatter.
-- Other role names are up to you (`clinical`, `staff`, `operations`, …) and must match values in `HANDBOOK_ROLE_MAP` and in markdown `roles` lists.
+| Command          | Description        |
+| ---------------- | ------------------ |
+| `npm run dev`    | Dev server         |
+| `npm run build`  | Production build   |
+| `npm run preview`| Preview production |
 
-## Deploy (example: Vercel)
+## Stack
 
-1. Create a new Vercel project from this directory’s repo.
-2. Add environment variables in the Vercel dashboard (same keys as `.env.example`).
-3. Attach custom domain **handbook.triangleact.com** and update Google OAuth origins/redirects to match.
-
-## Search
-
-Search uses [Fuse.js](https://fusejs.io/) over titles, categories, and excerpts of **only** pages the current user may read, so hidden titles do not appear in results.
+- [Astro](https://astro.build/) (SSR, [`@astrojs/cloudflare`](https://docs.astro.build/en/guides/integrations-guide/cloudflare/) for production and local `astro build`)
+- [auth-astro](https://github.com/nowaythatworked/auth-astro) + [Auth.js](https://authjs.dev/) (Google)
+- [marked](https://marked.js.org/) (GFM) for article HTML
+- [Fuse.js](https://fusejs.io/) for search

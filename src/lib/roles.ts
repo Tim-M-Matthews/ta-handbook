@@ -1,13 +1,16 @@
 /**
  * Maps Google account emails (lowercased) to handbook roles.
  * Set HANDBOOK_ROLE_MAP to JSON, e.g.
- * {"you@triangleact.com":["admin","clinical"],"other@triangleact.com":["staff"]}
+ * {"you@triangleact.com":["admin","clinical"],"peer@triangleact.com":"staff"}
  *
  * Values may be a string (single role) or string[].
  * Users with the "admin" role can read every page regardless of frontmatter roles.
  */
 export function parseRoleMap(): Record<string, string[]> {
-  const raw = process.env.HANDBOOK_ROLE_MAP;
+  const raw =
+    typeof process.env.HANDBOOK_ROLE_MAP === "string"
+      ? process.env.HANDBOOK_ROLE_MAP
+      : "";
   if (!raw?.trim()) return {};
   try {
     const parsed = JSON.parse(raw) as Record<string, string | string[]>;
@@ -30,7 +33,7 @@ export function rolesForEmail(email: string): string[] {
 
 export function userCanViewPage(
   userRoles: string[],
-  pageRoles: string[] | undefined
+  pageRoles: string[] | undefined,
 ): boolean {
   if (userRoles.includes("admin")) return true;
   const required = pageRoles?.filter(Boolean) ?? [];

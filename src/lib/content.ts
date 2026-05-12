@@ -1,9 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import matter from "gray-matter";
 import { userCanViewPage } from "./roles";
-
-const PAGES_DIR = path.join(process.cwd(), "content", "pages");
 
 export type HandbookMeta = {
   slug: string;
@@ -18,40 +14,21 @@ export type HandbookDoc = HandbookMeta & {
   body: string;
 };
 
-function assertSafeSlug(slug: string): void {
-  if (!slug || slug.includes("..") || slug.startsWith("/")) {
-    throw new Error("Invalid slug");
-  }
-}
+/** Bundled at build time so SSR works on Cloudflare Workers (no runtime filesystem). */
+const rawModules = import.meta.glob<string>("../../content/pages/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
 
-function markdownPathForSlug(slug: string): string {
-  assertSafeSlug(slug);
-  const resolvedRoot = path.resolve(PAGES_DIR);
-  const file = path.resolve(path.join(PAGES_DIR, `${slug}.md`));
-  if (!file.startsWith(resolvedRoot + path.sep) && file !== resolvedRoot) {
-    throw new Error("Invalid path");
-  }
-  return file;
-}
-
-function walkMarkdownFiles(dir: string, prefix = ""): string[] {
-  if (!fs.existsSync(dir)) return [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const out: string[] = [];
-  for (const ent of entries) {
-    const rel = prefix ? `${prefix}/${ent.name}` : ent.name;
-    if (ent.isDirectory()) {
-      out.push(...walkMarkdownFiles(path.join(dir, ent.name), rel));
-    } else if (ent.isFile() && ent.name.endsWith(".md")) {
-      out.push(rel.slice(0, -3));
-    }
-  }
-  return out;
+function slugFromGlobKey(key: string): string | null {
+  const m = key.match(/content\/pages\/(.+)\.md$/);
+  return m ? m[1] : null;
 }
 
 function metaFromMatter(
   slug: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): Omit<HandbookMeta, "slug"> {
   const title =
     typeof data.title === "string" && data.title.trim()
@@ -71,29 +48,28 @@ function metaFromMatter(
   return { title, category, roles, order };
 }
 
+const docsBySlug = new Map<string, HandbookDoc>();
+
+for (const [key, raw] of Object.entries(rawModules)) {
+  const slug = slugFromGlobKey(key.replaceAll("\\", "/"));
+  if (!slug || slug.includes("..")) continue;
+  const { content, data } = matter(raw);
+  const m = metaFromMatter(slug, data as Record<string, unknown>);
+  docsBySlug.set(slug, { slug, ...m, body: content.trim() });
+}
+
 export function getAllSlugs(): string[] {
-  return walkMarkdownFiles(PAGES_DIR);
+  return [...docsBySlug.keys()].sort();
 }
 
 export function getDocBySlug(slug: string): HandbookDoc | null {
-  try {
-    const file = markdownPathForSlug(slug);
-    if (!fs.existsSync(file)) return null;
-    const raw = fs.readFileSync(file, "utf8");
-    const { content, data } = matter(raw);
-    const m = metaFromMatter(slug, data as Record<string, unknown>);
-    return { slug, ...m, body: content.trim() };
-  } catch {
-    return null;
-  }
+  if (!slug || slug.includes("..") || slug.startsWith("/")) return null;
+  return docsBySlug.get(slug) ?? null;
 }
 
 export function listMetaForRoles(userRoles: string[]): HandbookMeta[] {
-  const slugs = getAllSlugs();
   const metas: HandbookMeta[] = [];
-  for (const slug of slugs) {
-    const doc = getDocBySlug(slug);
-    if (!doc) continue;
+  for (const doc of docsBySlug.values()) {
     if (!userCanViewPage(userRoles, doc.roles)) continue;
     metas.push({
       slug: doc.slug,

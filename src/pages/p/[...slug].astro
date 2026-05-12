@@ -1,0 +1,34 @@
+---
+import HandbookLayout from "../../layouts/HandbookLayout.astro";
+import { marked } from "marked";
+import { getDocBySlug } from "../../lib/content";
+import { userCanViewPage } from "../../lib/roles";
+
+marked.setOptions({ gfm: true });
+
+const slug = Astro.params.slug;
+if (!slug) {
+  return new Response(null, { status: 404 });
+}
+
+const session = Astro.locals.session!;
+const userRoles = session.user?.roles ?? [];
+const doc = getDocBySlug(slug);
+if (!doc || !userCanViewPage(userRoles, doc.roles)) {
+  return new Response(null, { status: 404 });
+}
+
+const html = marked.parse(doc.body) as string;
+---
+
+<HandbookLayout title={`${doc.title} — Handbook`}>
+  <p style="margin: 0 0 1rem; font-size: 0.875rem">
+    <a href="/">← Handbook home</a>
+    {" · "}
+    <span style="color: var(--muted)">{doc.category}</span>
+  </p>
+  <article class="prose">
+    <h1>{doc.title}</h1>
+    <div set:html={html} />
+  </article>
+</HandbookLayout>

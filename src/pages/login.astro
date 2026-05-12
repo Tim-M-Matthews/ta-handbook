@@ -1,0 +1,60 @@
+---
+import "../styles/global.css";
+import { isAuthBypassed } from "../lib/dev-auth";
+
+if (isAuthBypassed()) {
+  return Astro.redirect("/");
+}
+
+if (Astro.locals.session?.user) {
+  return Astro.redirect("/");
+}
+
+const error = Astro.url.searchParams.get("error");
+
+const errorCopy: Record<string, string> = {
+  config:
+    "Authentication is misconfigured (usually a missing AUTH_SECRET). Copy .env.example to .env, set AUTH_SECRET, and restart the dev server.",
+  noemail:
+    "Your Google account did not return an email address. Try another account.",
+  norole:
+    "Your Google account is not in the handbook access list. Ask an administrator to add your email to HANDBOOK_ROLE_MAP.",
+  AccessDenied: "Sign-in was cancelled or denied.",
+  OAuthAccountNotLinked: "This account could not be linked.",
+};
+
+const message = error
+  ? errorCopy[error] ?? `Sign-in error: ${error}`
+  : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/file.svg" />
+    <title>Handbook sign-in</title>
+  </head>
+  <body>
+    <div class="login">
+      <div class="login__card">
+        <h1 class="login__title">Handbook sign-in</h1>
+        <p class="login__lead">
+          Internal Triangle ACT content. Use your Google workspace account.
+        </p>
+        {message ? <p class="login__error" role="alert">{message}</p> : null}
+        <button type="button" class="btn btn--primary" id="signin-google">
+          Continue with Google
+        </button>
+      </div>
+    </div>
+    <script>
+      import { signIn } from "auth-astro/client";
+      document.getElementById("signin-google")?.addEventListener("click", () => {
+        // auth-astro forwards this to Auth.js; types omit callbackUrl but it is supported.
+        void signIn("google", { callbackUrl: "/" } as never);
+      });
+    </script>
+  </body>
+</html>

@@ -1,10 +1,24 @@
-import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
-import { rolesForEmail } from "@/lib/roles";
+import Google from "@auth/core/providers/google";
+import { defineConfig } from "auth-astro";
+import { rolesForEmail } from "./src/lib/roles.ts";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+/**
+ * Auth.js requires a non-empty secret. Use process.env here: Vite does not expose
+ * arbitrary keys on import.meta.env (only VITE_*), and auth-astro's getSession only
+ * falls back to import.meta.env.AUTH_SECRET — so defining secret in this config fixes
+ * "There was a problem with the server configuration" when .env is otherwise correct.
+ */
+const secret = process.env.AUTH_SECRET;
+
+export default defineConfig({
+  secret,
   trustHost: true,
-  providers: [Google],
+  providers: [
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+  ],
   callbacks: {
     async signIn({ profile }) {
       const email =
@@ -37,12 +51,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           : [];
       }
       return session;
-    },
-    authorized({ auth, request }) {
-      const pathname = request.nextUrl.pathname;
-      if (pathname.startsWith("/api/auth")) return true;
-      if (pathname === "/login") return true;
-      return !!auth?.user;
     },
   },
   pages: {

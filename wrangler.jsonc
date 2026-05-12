@@ -1,6 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "handbook",
+  "name": "ta-handbook",
+  "main": "./dist/_worker.js/index.js",
   "compatibility_date": "2025-05-12",
-  "pages_build_output_dir": "./dist"
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist"
+  }
 }

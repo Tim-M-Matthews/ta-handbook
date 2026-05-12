@@ -42,7 +42,9 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 | `roles`      | Who can see the page when signed in (string or array); omit or empty = any mapped user. `admin` in `HANDBOOK_ROLE_MAP` sees everything. |
 | `order`      | Sort order within a category (number) |
 
-**Deploy / automatic updates:** **Cloudflare Pages → Connect to Git** → production branch (e.g. `main`). Every **push** runs **`npm run build`**. If your Pages setup **requires a deploy command**, use **`npm run deploy`** (runs **`wrangler pages deploy`**, which uploads `dist` including Astro’s `dist/_worker.js`). Do **not** use `wrangler deploy`—that targets a standalone Worker and fails without a Worker `main` entry. **`wrangler.jsonc`** must use **`name`** equal to your **Pages project name** in the dashboard (change `handbook` if yours differs), and **`pages_build_output_dir`** `./dist` must match Astro’s output. To sync bindings from Cloudflare, run **`npx wrangler pages download config`** locally (see [Wrangler configuration for Pages](https://developers.cloudflare.com/pages/functions/wrangler-configuration/)). Build output directory in the UI can stay **`dist`**, **Node** 20.x. Set production env vars (see `.env.example`). For a smoke test without Google, use **`DISABLE_AUTH=true`** on a preview branch only.
+**Deploy / automatic updates:** Astro’s current [Cloudflare deploy guide](https://docs.astro.build/en/guides/deploy/cloudflare/) targets **Cloudflare Workers** (static assets + SSR Worker), not the Pages-only upload path. This repo uses **`npm run build`** then **`npm run deploy`** (`wrangler deploy`) with **`wrangler.jsonc`** (`name` **`ta-handbook`**, **`main`**: built handler, **`assets.directory`**: `./dist`). **`public/.assetsignore`** lists **`_worker.js`** so Wrangler does not treat the server bundle as a public static file (see [withastro/astro#13582](https://github.com/withastro/astro/issues/13582)). **`nodejs_compat`** is enabled for server-side dependencies.
+
+In Cloudflare, use **Workers Builds** (or equivalent): **Build command** `npm run build`, **Deploy command** `npm run deploy`. Set **`CLOUDFLARE_API_TOKEN`** (and **`CLOUDFLARE_ACCOUNT_ID`** if needed) to a token with **Workers Scripts: Edit** (and **KV: Edit** if you rely on Astro’s default **SESSION** KV). Env vars for Auth still go in the Worker / build settings as before. If you still have an old **Pages**–only project, migrate or create a Worker app per Cloudflare’s [Pages → Workers migration](https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/) so the dashboard matches **`wrangler deploy`**.
 
 ## Scripts
 
@@ -51,7 +53,7 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 | `npm run dev`    | Dev server         |
 | `npm run build`  | Production build   |
 | `npm run preview`| Preview production |
-| `npm run deploy` | Upload `dist` to Cloudflare Pages via Wrangler (when deploy step is required) |
+| `npm run deploy` | Deploy Worker + static assets (`wrangler deploy` after `astro build`) |
 
 ## Stack
 

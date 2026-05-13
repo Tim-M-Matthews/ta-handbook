@@ -1,6 +1,6 @@
 # Triangle ACT Handbook (Astro)
 
-Internal handbook: **Markdown in `content/pages/`** (GitHub + optional **[Pages CMS](https://pagescms.org/)** UI), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** ([`src/lib/handbook-role-map.ts`](src/lib/handbook-role-map.ts)), and **server-side search** (Fuse.js). No database—content lives in the repo; deploys build from Git.
+Internal handbook: **Markdown in `content/pages/`** (GitHub + optional **[GitCMS](https://gitcms.dev/)**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** ([`src/lib/handbook-role-map.ts`](src/lib/handbook-role-map.ts)), and **server-side search** (Fuse.js). No database—content lives in the repo; deploys build from Git.
 
 ## Requirements
 
@@ -72,16 +72,23 @@ The app reads the Google profile **email**, looks up **`handbook-role-map.ts`**,
 
 Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Merge to the branch your host builds from (e.g. `main`) to publish.
 
-### Pages CMS (optional UI)
+### GitCMS (optional UI)
 
-This repo includes **[`.pages.yml`](.pages.yml)** for **[Pages CMS](https://pagescms.org/)** — a free, open-source editor that commits directly to GitHub (see [introduction](https://pagescms.org/docs/) and [configuration](https://pagescms.org/docs/configuration)).
+**[GitCMS](https://gitcms.dev/)** is a visual, Git-based CMS that reads and writes Markdown in this repo. Configuration is stored under **`.gitcms/`** after you connect the repo—it is **generated and updated from the GitCMS Settings UI** (or [CLI onboarding](https://gitcms.dev/docs/getting-started/cli-onboarding)); [do not hand-edit those files](https://gitcms.dev/docs/getting-started/configuration) or they may be overwritten.
 
-1. Open **[app.pagescms.org](https://app.pagescms.org/)** and sign in with GitHub.
-2. Install the **Pages CMS GitHub App** for the account or org that owns this repository.
-3. Open this repo and branch; Pages CMS reads **`.pages.yml`** automatically.
-4. Use **Handbook pages** to edit frontmatter and page content (**rich text** in Pages CMS, stored as HTML; GitHub-only edits can stay Markdown). Use **Media** for uploads (stored under **`public/handbook-media/`**, referenced as **`/handbook-media/...`**).
+1. Sign in at **[gitcms.dev](https://gitcms.dev/)** with GitHub.
+2. **Connect repository** and install the **GitCMS GitHub App** for this repo (read/write on repo contents only).
+3. In **Settings**, configure at least:
+   - **Framework:** Astro (often auto-detected).
+   - **Collections:** point a collection at **`content/pages`**, **`.md`**, **YAML** frontmatter, and a schema that matches the handbook fields (`title`, `category`, `order`, `roles`, body).
+   - **Media path:** e.g. **`public/handbook-media`** so uploads match Astro’s `public/` URLs (**`/handbook-media/...`**).
+4. **Commit** the **`.gitcms/`** folder when GitCMS adds it so teammates and CI see the same config.
 
-**Local dev:** Pages CMS does not run inside `npm run dev`. After you save in the CMS (commits to GitHub), run **`git pull`** on your machine and refresh the browser; the handbook reads `content/pages/` from disk. Restart the dev server if a brand-new file does not appear.
+**Publishing:** GitCMS defaults to an editorial workflow; you can switch to **direct publish** so saves land on your default branch like before—see [Publishing modes](https://gitcms.dev/docs/getting-started/configuration#publishing-modes). **Licensing:** preview vs paid saves is described in [Licensing & preview](https://gitcms.dev/docs/getting-started/licensing).
+
+**Local dev:** GitCMS does not run inside `npm run dev`. After changes are on GitHub, **`git pull`** and refresh; restart the dev server if a new file does not show up.
+
+See **[Quick start](https://gitcms.dev/docs/getting-started/quick-start)** and **[Configuration](https://gitcms.dev/docs/getting-started/configuration)** for full detail.
 
 Frontmatter and roles behave the same as when editing files in GitHub.
 
@@ -94,7 +101,7 @@ Frontmatter and roles behave the same as when editing files in GitHub.
 | `roles`      | Who can see the page when signed in (string or array); omit or empty = any mapped user. Users with the `admin` role in `handbook-role-map.ts` see everything. |
 | `order`      | Sort order within a category (number) |
 
-The **page body** (below the `---` frontmatter) may be **Markdown** (legacy / GitHub edits) or **HTML** (saved from Pages CMS rich text); the site supports both.
+The **page body** (below the `---` frontmatter) may be **Markdown** (GitHub / plain edits) or **HTML** (some visual CMS saves); the site supports both.
 
 **Deploy / automatic updates:** Astro’s current [Cloudflare deploy guide](https://docs.astro.build/en/guides/deploy/cloudflare/) targets **Cloudflare Workers** (static assets + SSR Worker), not the Pages-only upload path. This repo uses **`npm run build`** then **`npm run deploy`** (`wrangler deploy`) with **`wrangler.jsonc`** (`name` **`ta-handbook`**, **`main`**: built handler, **`assets.directory`**: `./dist`). **`public/.assetsignore`** lists **`_worker.js`** so Wrangler does not treat the server bundle as a public static file (see [withastro/astro#13582](https://github.com/withastro/astro/issues/13582)). **`nodejs_compat`** is enabled for server-side dependencies.
 
@@ -113,5 +120,6 @@ In Cloudflare, use **Workers Builds** (or equivalent): **Build command** `npm ru
 
 - [Astro](https://astro.build/) (SSR, [`@astrojs/cloudflare`](https://docs.astro.build/en/guides/integrations-guide/cloudflare/) for production and local `astro build`)
 - [auth-astro](https://github.com/nowaythatworked/auth-astro) + [Auth.js](https://authjs.dev/) (Google)
+- [GitCMS](https://gitcms.dev/) (optional content UI; config in `.gitcms/` from their Settings)
 - [marked](https://marked.js.org/) (GFM) for article HTML
 - [Fuse.js](https://fusejs.io/) for search

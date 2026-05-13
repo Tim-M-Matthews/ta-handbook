@@ -3,7 +3,7 @@ import { marked } from "marked";
 marked.setOptions({ gfm: true });
 
 /**
- * Pages CMS (and similar) persist rich text as HTML in the file body.
+ * Visual CMS editors (e.g. GitCMS) often persist rich text as HTML in the file body.
  * Legacy handbook pages use Markdown/GFM — detect HTML so we render correctly.
  */
 export function bodyIsLikelyHtml(body: string): boolean {

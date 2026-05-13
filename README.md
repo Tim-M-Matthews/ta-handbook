@@ -72,6 +72,8 @@ The app reads the Google profile **email**, looks up **`handbook-role-map.ts`**,
 
 Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Merge to the branch your host builds from (e.g. `main`) to publish.
 
+**Sitemap:** **`GET /sitemap.xml`** (`src/pages/sitemap.xml.ts`) returns a URL list with `/`, `/search`, and each `/p/{slug}` from `content/pages/**/*.md`. For stable production `<loc>` URLs, set **`PUBLIC_SITE_URL`** (see `.env.example`); it also sets Astro’s **`site`** in `astro.config.mjs`. If unset, the sitemap uses the request origin (e.g. local dev).
+
 ### GitCMS (optional UI)
 
 **[GitCMS](https://gitcms.dev/)** is a visual, Git-based CMS that reads and writes Markdown in this repo. Configuration is stored under **`.gitcms/`** after you connect the repo—it is **generated and updated from the GitCMS Settings UI** (or [CLI onboarding](https://gitcms.dev/docs/getting-started/cli-onboarding)); [do not hand-edit those files](https://gitcms.dev/docs/getting-started/configuration) or they may be overwritten.

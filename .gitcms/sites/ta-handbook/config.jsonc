@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "media_path": "/public",
+  "ssg_framework": "astro",
+  "frontmatter_format": "yaml",
+  "publishing_mode": "direct_publish",
+  "collections": [
+    {
+      "name": "Pages",
+      "git_path": "/content/pages/",
+      "file_extension": ".md",
+      "filename_pattern": "-",
+      "collection_type": "grouped"
+    }
+  ]
+}

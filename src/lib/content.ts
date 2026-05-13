@@ -1,12 +1,16 @@
 import matter from "gray-matter";
+import { categoryDefForId, resolveCategoryId } from "./categories";
 import { plainTextFromBody } from "./body-render";
 import { userCanViewPage } from "./roles";
 
 export type HandbookMeta = {
   slug: string;
   title: string;
-  category: string;
-  /** If empty, any signed-in user with a mapped role may view. */
+  /** Matches `content/categories/{id}.md` (and page frontmatter `category`). */
+  categoryId: string;
+  /** Display name from the category file’s `title`. */
+  categoryLabel: string;
+  /** Page-level roles; empty = any viewer who passes the category gate may read. */
   roles: string[];
   order: number;
 };
@@ -35,10 +39,8 @@ function metaFromMatter(
     typeof data.title === "string" && data.title.trim()
       ? data.title.trim()
       : slug.split("/").pop() ?? slug;
-  const category =
-    typeof data.category === "string" && data.category.trim()
-      ? data.category.trim()
-      : "General";
+  const categoryId = resolveCategoryId(data.category);
+  const categoryLabel = categoryDefForId(categoryId).title;
   let roles: string[] = [];
   if (Array.isArray(data.roles)) {
     roles = data.roles.map(String);
@@ -46,7 +48,7 @@ function metaFromMatter(
     roles = [data.roles.trim()];
   }
   const order = typeof data.order === "number" ? data.order : 0;
-  return { title, category, roles, order };
+  return { title, categoryId, categoryLabel, roles, order };
 }
 
 const docsBySlug = new Map<string, HandbookDoc>();
@@ -71,18 +73,22 @@ export function getDocBySlug(slug: string): HandbookDoc | null {
 export function listMetaForRoles(userRoles: string[]): HandbookMeta[] {
   const metas: HandbookMeta[] = [];
   for (const doc of docsBySlug.values()) {
+    const cat = categoryDefForId(doc.categoryId);
+    if (!userCanViewPage(userRoles, cat.roles)) continue;
     if (!userCanViewPage(userRoles, doc.roles)) continue;
     metas.push({
       slug: doc.slug,
       title: doc.title,
-      category: doc.category,
+      categoryId: doc.categoryId,
+      categoryLabel: doc.categoryLabel,
       roles: doc.roles,
       order: doc.order,
     });
   }
   metas.sort((a, b) => {
-    const c = a.category.localeCompare(b.category);
-    if (c !== 0) return c;
+    const ca = categoryDefForId(a.categoryId);
+    const cb = categoryDefForId(b.categoryId);
+    if (ca.order !== cb.order) return ca.order - cb.order;
     if (a.order !== b.order) return a.order - b.order;
     return a.title.localeCompare(b.title);
   });

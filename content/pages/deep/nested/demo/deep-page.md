@@ -1,6 +1,6 @@
 ---
 title: Deeply nested slug (demo)
-category: Testing
+category: testing
 order: 5
 ---
 

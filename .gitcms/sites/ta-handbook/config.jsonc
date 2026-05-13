@@ -11,6 +11,13 @@
       "file_extension": ".md",
       "filename_pattern": "-",
       "collection_type": "grouped"
+    },
+    {
+      "name": "Categories",
+      "git_path": "/content/categories/",
+      "file_extension": ".md",
+      "filename_pattern": "-",
+      "collection_type": "grouped"
     }
   ]
 }

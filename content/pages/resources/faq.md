@@ -1,6 +1,6 @@
 ---
 title: FAQ (demo)
-category: Resources
+category: resources
 order: 1
 ---
 

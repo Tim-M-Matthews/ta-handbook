@@ -1,6 +1,6 @@
 ---
 title: Markdown showcase (test)
-category: Testing
+category: testing
 order: 1
 ---
 

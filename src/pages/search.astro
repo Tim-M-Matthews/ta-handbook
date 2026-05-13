@@ -8,7 +8,7 @@ const roles = session.user?.roles ?? [];
 const q = Astro.url.searchParams.get("q")?.trim() ?? "";
 const rows = searchRowsForRoles(roles);
 const fuse = new Fuse(rows, {
-  keys: ["title", "category", "excerpt"],
+  keys: ["title", "categoryLabel", "excerpt"],
   threshold: 0.35,
   ignoreLocation: true,
 });
@@ -46,7 +46,7 @@ const results = q ? fuse.search(q).map((r) => r.item) : [];
             <h2 class="search-hit__title">
               <a href={`/p/${hit.slug}`}>{hit.title}</a>
             </h2>
-            <div class="search-hit__cat">{hit.category}</div>
+            <div class="search-hit__cat">{hit.categoryLabel}</div>
             <p class="search-hit__excerpt">{hit.excerpt}</p>
           </li>
         ))}

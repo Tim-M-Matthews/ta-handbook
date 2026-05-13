@@ -1,6 +1,6 @@
 ---
 title: Time off requests (demo)
-category: Policies
+category: policies
 order: 1
 ---
 

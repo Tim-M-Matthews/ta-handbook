@@ -1,6 +1,6 @@
 ---
 title: GFM extras (demo)
-category: Testing
+category: testing
 order: 3
 ---
 

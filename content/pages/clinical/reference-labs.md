@@ -1,12 +1,10 @@
 ---
 title: Lab reference sheet (demo)
-category: Clinical
+category: clinical
 order: 1
-roles:
-  - clinical
 ---
 
-This page has **`roles: clinical`** in frontmatter. Only users whose mapped roles include `clinical`, or who have `admin`, will see it in the index and search.
+This page sits in the **`clinical`** category. Access is controlled by **`content/categories/clinical.md`** (`roles: clinical`), so only users with the `clinical` role or `admin` see **any** page in this category. Page-level `roles` are optional for extra restrictions inside the category.
 
 ## Demo table
 

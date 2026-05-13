@@ -1,5 +1,6 @@
 ---
 import HandbookLayout from "../../layouts/HandbookLayout.astro";
+import { categoryDefForId } from "../../lib/categories";
 import { renderHandbookBody } from "../../lib/body-render";
 import { getDocBySlug } from "../../lib/content";
 import { userCanViewPage } from "../../lib/roles";
@@ -12,7 +13,13 @@ if (!slug) {
 const session = Astro.locals.session!;
 const userRoles = session.user?.roles ?? [];
 const doc = getDocBySlug(slug);
-if (!doc || !userCanViewPage(userRoles, doc.roles)) {
+const cat = doc ? categoryDefForId(doc.categoryId) : null;
+if (
+  !doc ||
+  !cat ||
+  !userCanViewPage(userRoles, cat.roles) ||
+  !userCanViewPage(userRoles, doc.roles)
+) {
   return new Response(null, { status: 404 });
 }
 
@@ -23,7 +30,7 @@ const html = renderHandbookBody(doc.body);
   <p style="margin: 0 0 1rem; font-size: 0.875rem">
     <a href="/">← Handbook home</a>
     {" · "}
-    <span style="color: var(--muted)">{doc.category}</span>
+    <span style="color: var(--muted)">{doc.categoryLabel}</span>
   </p>
   <article class="prose">
     <h1>{doc.title}</h1>

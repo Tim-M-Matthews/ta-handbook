@@ -1,6 +1,6 @@
 ---
 title: Short test note
-category: Testing
+category: testing
 order: 2
 ---
 

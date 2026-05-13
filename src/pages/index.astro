@@ -6,13 +6,16 @@ import { listMetaForRoles } from "../lib/content";
 const session = Astro.locals.session!;
 const roles = session.user?.roles ?? [];
 const pages = listMetaForRoles(roles);
-const byCategory = new Map<string, typeof pages>();
+/** `listMetaForRoles` is sorted by category order, then page order — group consecutive sections. */
+const sections: { id: string; label: string; pages: typeof pages }[] = [];
 for (const p of pages) {
-  const list = byCategory.get(p.category) ?? [];
-  list.push(p);
-  byCategory.set(p.category, list);
+  const last = sections[sections.length - 1];
+  if (!last || last.id !== p.categoryId) {
+    sections.push({ id: p.categoryId, label: p.categoryLabel, pages: [p] });
+  } else {
+    last.pages.push(p);
+  }
 }
-const categories = [...byCategory.keys()].sort((a, b) => a.localeCompare(b));
 const bypass = isAuthBypassed();
 const localPersona = isLocalDevPersona();
 ---
@@ -103,18 +106,18 @@ const localPersona = isLocalDevPersona();
     )
   }
   {
-    categories.length === 0 ? (
+    sections.length === 0 ? (
       <p class="empty">
         No pages available yet. Add markdown under <code>content/pages</code>.
       </p>
     ) : (
-      categories.map((cat) => (
-        <section class="cat" aria-labelledby={`cat-${cat}`}>
-          <h2 id={`cat-${cat}`} class="cat__title">
-            {cat}
+      sections.map((sec) => (
+        <section class="cat" aria-labelledby={`cat-${sec.id}`}>
+          <h2 id={`cat-${sec.id}`} class="cat__title">
+            {sec.label}
           </h2>
           <ul class="cat__list" role="list">
-            {(byCategory.get(cat) ?? []).map((p) => (
+            {sec.pages.map((p) => (
               <li class="cat__item">
                 <a class="cat__link" href={`/p/${p.slug}`}>
                   {p.title}

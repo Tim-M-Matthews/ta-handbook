@@ -1,6 +1,6 @@
 # Triangle ACT Handbook (Astro)
 
-Internal handbook: **Markdown in `content/pages/`** (GitHub + optional **[GitCMS](https://gitcms.dev/)**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** ([`src/lib/handbook-role-map.ts`](src/lib/handbook-role-map.ts)), and **server-side search** (Fuse.js). No database—content lives in the repo; deploys build from Git.
+Internal handbook: **Markdown in `content/pages/`** and **category metadata in `content/categories/`** (GitHub + optional **[GitCMS](https://gitcms.dev/)**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** ([`src/lib/handbook-role-map.ts`](src/lib/handbook-role-map.ts)), and **server-side search** (Fuse.js). No database—content lives in the repo; deploys build from Git.
 
 ## Requirements
 
@@ -72,6 +72,8 @@ The app reads the Google profile **email**, looks up **`handbook-role-map.ts`**,
 
 Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Merge to the branch your host builds from (e.g. `main`) to publish.
 
+**Categories:** each page’s frontmatter `category` is an **id** that matches a file `content/categories/{id}.md`. That file holds the **section title** (`title`), **sort order among sections** (`order`), and optional **`roles`** that apply to the whole category (users must pass the category gate and any page-level `roles`). GitCMS can manage this as a second collection (see `.gitcms/`).
+
 **Sitemap:** **`GET /sitemap.xml`** (`src/pages/sitemap.xml.ts`) returns a URL list with `/`, `/search`, and each `/p/{slug}` from `content/pages/**/*.md`. For stable production `<loc>` URLs, set **`PUBLIC_SITE_URL`** (see `.env.example`); it also sets Astro’s **`site`** in `astro.config.mjs`. If unset, the sitemap uses the request origin (e.g. local dev).
 
 ### GitCMS (optional UI)
@@ -82,7 +84,7 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 2. **Connect repository** and install the **GitCMS GitHub App** for this repo (read/write on repo contents only).
 3. In **Settings**, configure at least:
    - **Framework:** Astro (often auto-detected).
-   - **Collections:** point a collection at **`content/pages`**, **`.md`**, **YAML** frontmatter, and a schema that matches the handbook fields (`title`, `category`, `order`, `roles`, body).
+   - **Collections:** (1) **Pages** — **`content/pages`**, **`.md`**, YAML frontmatter: `title`, **`category`** (id matching a category file), `order`, optional `roles`, body. (2) **Categories** — **`content/categories`**, **`.md`**, YAML: `title`, `order`, optional `roles` (same semantics as pages; empty = any signed-in handbook user). Filename stem = id (e.g. `clinical.md` → pages use `category: clinical`).
    - **Media path:** e.g. **`public/handbook-media`** so uploads match Astro’s `public/` URLs (**`/handbook-media/...`**).
 4. **Commit** the **`.gitcms/`** folder when GitCMS adds it so teammates and CI see the same config.
 
@@ -99,9 +101,9 @@ Frontmatter and roles behave the same as when editing files in GitHub.
 | Field        | Purpose |
 | ------------ | ------- |
 | `title`      | Page title (defaults to filename if omitted) |
-| `category`   | Section label on the handbook home |
-| `roles`      | Who can see the page when signed in (string or array); omit or empty = any mapped user. Users with the `admin` role in `handbook-role-map.ts` see everything. |
-| `order`      | Sort order within a category (number) |
+| `category`   | **Category id** — must match `content/categories/{id}.md` (e.g. `clinical`). Older pages may still use a display name; the app resolves it when possible. |
+| `roles`      | Optional extra gate for this page only (string or array); omit or empty = any user who already passes the **category** roles. `admin` always sees everything. |
+| `order`      | Sort order within the category (number) |
 
 The **page body** (below the `---` frontmatter) may be **Markdown** (GitHub / plain edits) or **HTML** (some visual CMS saves); the site supports both.
 

@@ -1,6 +1,6 @@
 ---
 title: Onboarding checklist (fixture)
-category: Guides
+category: guides
 order: 10
 ---
 

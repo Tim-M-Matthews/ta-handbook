@@ -40,7 +40,7 @@ content:
         type: string
         list: true
         description: >
-          Leave empty so any user listed in HANDBOOK_ROLE_MAP can view the page.
+          Leave empty so any signed-in user (listed in src/lib/handbook-role-map.ts) can view the page.
           Otherwise add one or more role names; the user needs at least one match.
           Users with the admin role always see every page.
       - name: body

@@ -43,7 +43,7 @@ function localDevEmail(): string {
 }
 
 /**
- * Session used in `astro dev`: fixed workspace email, roles from `HANDBOOK_ROLE_MAP`
+ * Session used in `astro dev`: fixed workspace email, roles from `handbook-role-map.ts`
  * (same rules as production Google sign-in). If the email is missing from the map, grants
  * `admin` for usability and logs a warning.
  */
@@ -52,7 +52,7 @@ export function localDevPersonaSession(): Session {
   let roles = rolesForEmail(email);
   if (roles.length === 0) {
     console.warn(
-      `[dev-auth] HANDBOOK_ROLE_MAP has no entry for ${email}. Using role "admin" for local dev. Add this email to .env to mirror production access.`,
+      `[dev-auth] No entry for ${email} in src/lib/handbook-role-map.ts. Using role "admin" for local dev.`,
     );
     roles = ["admin"];
   }

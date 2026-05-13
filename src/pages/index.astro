@@ -19,34 +19,89 @@ const localPersona = isLocalDevPersona();
 
 <HandbookLayout title="Handbook">
   <h1 class="h1">Handbook</h1>
-  <p class="lead">
-    {
-      bypass ? (
-        localPersona ? (
-          <>
-            <strong>Local dev:</strong> signed in as{" "}
-            <strong>{session.user?.email ?? "—"}</strong> (no Google OAuth). Page access
-            follows <code>HANDBOOK_ROLE_MAP</code> like production. Roles:{" "}
-            <strong>{roles.length ? roles.join(", ") : "—"}</strong>. Edit{" "}
-            <code>content/pages</code> and save—refresh to view changes. Optional: set{" "}
-            <code>DEV_AUTH_EMAIL</code> in <code>.env</code> to impersonate another user.
-          </>
-        ) : (
-          <>
-            <strong>Preview / deploy test:</strong> <code>DISABLE_AUTH</code> is set—Google
-            sign-in is off and you see every page. Remove it for production. Edit{" "}
-            <code>content/pages</code> and redeploy to publish.
-          </>
-        )
-      ) : (
-        <>
-          Pages shown here match your roles:{" "}
-          <strong>{roles.length ? roles.join(", ") : "—"}</strong>. Edit{" "}
-          <code>content/pages</code> and redeploy to publish updates.
-        </>
-      )
-    }
-  </p>
+  {
+    bypass && localPersona ? (
+      <aside
+        class="dev-callout"
+        id="local-dev-callout"
+        role="status"
+        aria-labelledby="local-dev-callout-title"
+        data-dismiss-storage="triangle-act-handbook:local-dev-banner"
+      >
+        <div class="dev-callout__head">
+          <strong class="dev-callout__title" id="local-dev-callout-title">
+            Local dev
+          </strong>
+          <button
+            type="button"
+            class="dev-callout__close"
+            data-dismiss-close
+            aria-label="Dismiss local dev notice"
+          >
+            Dismiss
+          </button>
+        </div>
+        <div class="dev-callout__body">
+          <p>
+            You're signed in as <strong>{session.user?.email ?? "—"}</strong>.
+          </p>
+          <p>Google OAuth is not used on this machine.</p>
+          <p>
+            Page access follows <code>src/lib/handbook-role-map.ts</code>, the same as
+            production after Google sign-in.
+          </p>
+          <p>
+            <strong>Roles:</strong> {roles.length ? roles.join(", ") : "—"}
+          </p>
+          <p>
+            Edit files under <code>content/pages</code>, then <strong>refresh the browser</strong>{" "}
+            to see changes.
+          </p>
+          <p>
+            Optional: set <code>DEV_AUTH_EMAIL</code> in <code>.env</code> to impersonate another
+            user.
+          </p>
+        </div>
+      </aside>
+    ) : bypass ? (
+      <aside
+        class="dev-callout dev-callout--preview"
+        id="preview-auth-callout"
+        role="status"
+        aria-labelledby="preview-auth-callout-title"
+        data-dismiss-storage="triangle-act-handbook:preview-auth-banner"
+      >
+        <div class="dev-callout__head">
+          <strong class="dev-callout__title" id="preview-auth-callout-title">
+            Preview / deploy test
+          </strong>
+          <button
+            type="button"
+            class="dev-callout__close"
+            data-dismiss-close
+            aria-label="Dismiss preview notice"
+          >
+            Dismiss
+          </button>
+        </div>
+        <div class="dev-callout__body">
+          <p>
+            <code>DISABLE_AUTH</code> is set. Google sign-in is off and you can see every page.
+          </p>
+          <p>Remove it for real production if the site must stay private.</p>
+          <p>
+            Edit <code>content/pages</code> and redeploy to publish.
+          </p>
+        </div>
+      </aside>
+    ) : (
+      <p class="lead">
+        Pages shown here match your roles:{" "}
+        <strong>{roles.length ? roles.join(", ") : "—"}</strong>. Edit{" "}
+        <code>content/pages</code> and redeploy to publish updates.
+      </p>
+    )
+  }
   {
     categories.length === 0 ? (
       <p class="empty">
@@ -70,5 +125,27 @@ const localPersona = isLocalDevPersona();
         </section>
       ))
     )
+  }
+  {
+    bypass ? (
+      <script is:inline>
+        (function () {
+          document.querySelectorAll("[data-dismiss-storage]").forEach(function (el) {
+            var key = el.getAttribute("data-dismiss-storage");
+            var btn = el.querySelector("[data-dismiss-close]");
+            if (!key || !btn) return;
+            try {
+              if (localStorage.getItem(key)) el.hidden = true;
+            } catch (_) {}
+            btn.addEventListener("click", function () {
+              try {
+                localStorage.setItem(key, "1");
+              } catch (_) {}
+              el.hidden = true;
+            });
+          });
+        })();
+      </script>
+    ) : null
   }
 </HandbookLayout>

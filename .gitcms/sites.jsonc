@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "sites": [
+    {
+      "key": "ta-handbook",
+      "display_name": "Ta Handbook",
+      "website_url": "https://ta-handbook.triangle-act-accts.workers.dev/",
+      "root_path": ""
+    }
+  ]
+}

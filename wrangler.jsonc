@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ta-handbook",
+  // Preserve Worker env vars set in the Cloudflare dashboard across `wrangler deploy`
+  // (e.g. GitHub → Workers Builds). Without this, plaintext vars not listed below are removed each deploy.
+  "keep_vars": true,
   "main": "./dist/_worker.js/index.js",
   "compatibility_date": "2025-05-12",
   "compatibility_flags": ["nodejs_compat"],

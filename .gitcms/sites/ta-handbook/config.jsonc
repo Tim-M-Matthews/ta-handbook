@@ -10,7 +10,37 @@
       "git_path": "/content/pages/",
       "file_extension": ".md",
       "filename_pattern": "-",
-      "collection_type": "grouped"
-    }
-  ]
+      "collection_type": "grouped",
+      "frontmatter_schema": [
+        {
+          "name": "title",
+          "type": "title",
+          "label": "Title",
+          "required": true,
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "label": "Order",
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "label": "Description",
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "label": "Category (optional, legacy)",
+        },
+        {
+          "name": "roles",
+          "type": "multiselect",
+          "label": "Roles",
+          "options": ["clinical", "staff", "admin"],
+          "color": "blue",
+        },
+      ],
+    },
+  ],
 }

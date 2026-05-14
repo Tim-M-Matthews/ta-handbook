@@ -1339,7 +1339,9 @@ a.cat__subtitle-link--bookmarked {
   width: 100%;
   min-height: 0;
   overflow: visible;
-  padding: 0.85rem 0.65rem;
+  padding-inline: 0.65rem;
+  /* Slight extra vertical rhythm; vw nudges padding up a bit on narrower windows before the 2-col breakpoint */
+  padding-block: clamp(0.95rem, 0.72rem + 0.9vw, 1.12rem);
   text-align: center;
   text-decoration: none;
   color: var(--text);
@@ -1402,7 +1404,9 @@ a.cat__subtitle-link--bookmarked {
   }
 
   .home-cat-grid__btn {
-    padding: 0.65rem 0.5rem;
+    padding-inline: 0.5rem;
+    /* A touch more vertical space on small screens (tap targets + multi-line titles) */
+    padding-block: clamp(1.02rem, 0.78rem + 1.35vw, 1.28rem);
     gap: 0.35rem;
     border-radius: 8px;
   }

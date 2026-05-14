@@ -19,11 +19,6 @@
           "required": true
         },
         {
-          "name": "category",
-          "type": "text",
-          "label": "Category"
-        },
-        {
           "name": "order",
           "type": "number",
           "label": "Order"

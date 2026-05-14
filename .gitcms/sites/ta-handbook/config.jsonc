@@ -16,31 +16,19 @@
           "name": "title",
           "type": "title",
           "label": "Title",
-          "required": true,
-        },
-        {
-          "name": "order",
-          "type": "number",
-          "label": "Order",
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "label": "Description",
+          "required": true
         },
         {
           "name": "category",
           "type": "text",
-          "label": "Category (optional, legacy)",
+          "label": "Category"
         },
         {
-          "name": "roles",
-          "type": "multiselect",
-          "label": "Roles",
-          "options": ["clinical", "staff", "admin"],
-          "color": "blue",
-        },
-      ],
-    },
-  ],
+          "name": "order",
+          "type": "number",
+          "label": "Order"
+        }
+      ]
+    }
+  ]
 }

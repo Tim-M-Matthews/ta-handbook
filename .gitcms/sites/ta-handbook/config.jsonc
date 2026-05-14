@@ -22,6 +22,19 @@
           "name": "order",
           "type": "number",
           "label": "Order"
+        },
+        {
+          "name": "description",
+          "type": "text"
+        },
+        {
+          "name": "access_level",
+          "type": "select",
+          "label": "Access Level",
+          "options": [
+            "admin",
+            "staff"
+          ]
         }
       ]
     }

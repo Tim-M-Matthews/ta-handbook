@@ -825,8 +825,6 @@ a.handbook-page-nav__badge--link:focus-visible {
   right: 0;
   top: calc(100% + 6px);
   z-index: 60;
-  min-width: 11rem;
-  padding: 0.35rem 0;
   border: 1px solid var(--border-elevated);
   border-radius: 8px;
   background: var(--surface);
@@ -849,12 +847,6 @@ a.handbook-page-nav__badge--link:focus-visible {
 
 .shell__user-menu__item:hover {
   background: var(--fill-link-hover);
-}
-
-@media (min-width: 961px) {
-  .shell__user-menu__item {
-    font-size: 1.25rem;
-  }
 }
 
 .shell__user-menu__hint {

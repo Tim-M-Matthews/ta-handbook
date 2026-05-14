@@ -189,13 +189,7 @@ const bookmarkCrumbsB64 = utf8ToBase64(JSON.stringify(bookmarkCrumbLookup));
           </p>
         </div>
       </aside>
-    ) : (
-      <p class="lead">
-        Pages shown here match your roles:{" "}
-        <strong>{roles.length ? roles.join(", ") : "—"}</strong>. Edit{" "}
-        <code>content/pages</code> and redeploy to publish updates.
-      </p>
-    )
+    ) : null
   }
   {
     sections.length === 0 ? (

@@ -1,0 +1,81 @@
+---
+import HandbookLayout from "../../layouts/HandbookLayout.astro";
+import { categoryDefForId, resolveCategoryId } from "../../lib/categories";
+import {
+  categoryExistsInSite,
+  groupPagesBySubcategory,
+  listMetaForCategory,
+} from "../../lib/content";
+import { userCanViewPage } from "../../lib/roles";
+
+const raw = Astro.params.category;
+if (
+  typeof raw !== "string" ||
+  !raw.trim() ||
+  raw.includes("..") ||
+  raw.includes("/")
+) {
+  return new Response(null, { status: 404 });
+}
+
+const categoryId = resolveCategoryId(raw);
+if (!categoryExistsInSite(categoryId)) {
+  return new Response(null, { status: 404 });
+}
+
+const session = Astro.locals.session!;
+const userRoles = session.user?.roles ?? [];
+const cat = categoryDefForId(categoryId);
+if (!userCanViewPage(userRoles, cat.roles)) {
+  return new Response(null, { status: 404 });
+}
+
+const pages = listMetaForCategory(userRoles, categoryId);
+const subsections = groupPagesBySubcategory(categoryId, pages);
+---
+
+<HandbookLayout title={`${cat.title} — Handbook`} categoryChromeId={categoryId} returnToParent={{ href: "/", label: "homepage" }}>
+  <p class="handbook-page-nav">
+    <a href="/">← Handbook home</a>
+  </p>
+  <div class="cat__intro">
+    <h1 class="h1">{cat.title}</h1>
+    {cat.description ? <p class="cat__desc">{cat.description}</p> : null}
+  </div>
+  {
+    pages.length === 0 ? (
+      <p class="empty">No pages in this category match your access.</p>
+    ) : (
+      subsections.map((sub) => (
+        <div class="cat__subsection">
+          {sub.subcategoryId ? (
+            <h3 class="cat__subtitle" id={`sub-${categoryId}-${sub.subcategoryId}`}>
+              <a
+                class="cat__subtitle-link"
+                href={`/c/${encodeURIComponent(categoryId)}/${encodeURIComponent(sub.subcategoryId)}`}
+                data-handbook-bookmark-slug={`c/${categoryId}/${sub.subcategoryId}`}
+              >
+                {sub.subcategoryLabel}
+              </a>
+            </h3>
+          ) : null}
+          {sub.subcategoryDescription ? (
+            <p class="cat__desc cat__desc--sub">{sub.subcategoryDescription}</p>
+          ) : null}
+          <ul class="cat__list" role="list">
+            {sub.pages.map((p) => (
+              <li class="cat__item">
+                <a class="cat__link" href={`/p/${p.slug}`} data-handbook-page-slug={p.slug}>
+                  <span class="cat__link-heading">
+                    <span class="cat__link-title">{p.title}</span>
+                  </span>
+                  {p.description ? <span class="cat__link-desc">{p.description}</span> : null}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    )
+  }
+</HandbookLayout>

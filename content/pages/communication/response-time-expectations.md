@@ -1,0 +1,10 @@
+---
+title: "Response Time Expectations"
+order: 20
+description: "Sets expectations for internal messages, client-related questions, urgent issues, and non-urgent administrative matters."
+---
+### Context
+
+1. **Prepare** materials and accounts.
+2. **Execute** the workflow with a witness if required.
+3. **Document** outcomes the same day when possible.

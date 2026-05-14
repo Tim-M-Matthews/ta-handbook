@@ -1,5 +1,6 @@
 import Google from "@auth/core/providers/google";
 import { defineConfig } from "auth-astro";
+import { displayNameFromEmail } from "./src/lib/display-name.ts";
 import { rolesForEmail } from "./src/lib/roles.ts";
 
 /**
@@ -36,6 +37,12 @@ export default defineConfig({
       const email =
         emailFromProfile ??
         (typeof token.email === "string" ? token.email.toLowerCase() : "");
+      if (typeof profile?.name === "string" && profile.name.trim()) {
+        token.name = profile.name.trim();
+      } else if (email && !token.name && profile) {
+        const derived = displayNameFromEmail(email);
+        if (derived) token.name = derived;
+      }
       if (email) {
         token.email = email;
         token.roles = rolesForEmail(email);
@@ -49,6 +56,14 @@ export default defineConfig({
         session.user.roles = Array.isArray(token.roles)
           ? (token.roles as string[])
           : [];
+        const fromToken =
+          typeof token.name === "string" ? token.name.trim() : "";
+        const fromUser = session.user.name?.trim() ?? "";
+        session.user.name =
+          fromToken ||
+          fromUser ||
+          displayNameFromEmail(session.user.email) ||
+          null;
       }
       return session;
     },

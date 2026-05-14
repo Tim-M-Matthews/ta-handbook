@@ -1,5 +1,9 @@
 import type { APIRoute } from "astro";
-import { getAllSlugs } from "../lib/content";
+import {
+  getAllCategoryIndexIds,
+  getAllSlugs,
+  getAllSubcategoryIndexPairs,
+} from "../lib/content";
 
 function xmlEscape(s: string): string {
   return s
@@ -19,7 +23,16 @@ export const GET: APIRoute = ({ site, request }) => {
     (typeof site === "string" ? site : site?.href)?.replace(/\/$/, "") ??
     new URL(request.url).origin;
 
-  const paths = ["/", "/search", ...getAllSlugs().map((slug) => `/p/${slug}`)];
+  const paths = [
+    "/",
+    "/search",
+    ...getAllCategoryIndexIds().map((id) => `/c/${encodeURIComponent(id)}`),
+    ...getAllSubcategoryIndexPairs().map(
+      ({ categoryId, subcategoryId }) =>
+        `/c/${encodeURIComponent(categoryId)}/${encodeURIComponent(subcategoryId)}`,
+    ),
+    ...getAllSlugs().map((slug) => `/p/${slug}`),
+  ];
 
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',

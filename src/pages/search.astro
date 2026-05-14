@@ -1,56 +1,187 @@
 ---
 import HandbookLayout from "../layouts/HandbookLayout.astro";
-import Fuse from "fuse.js";
+import { categoryChromeFieldsForRow } from "../lib/category-chrome";
+import { filterHandbookSearchRows } from "../lib/handbook-search-filter";
 import { searchRowsForRoles } from "../lib/content";
+import { highlightQueryTermsInPlainText } from "../lib/search-query-highlight";
+import { searchSnippetForHit } from "../lib/search-snippet";
+import { utf8JsonToBase64 } from "../lib/search-index-b64";
+
+const PAGE_SIZE = 10;
 
 const session = Astro.locals.session!;
 const roles = session.user?.roles ?? [];
 const q = Astro.url.searchParams.get("q")?.trim() ?? "";
 const rows = searchRowsForRoles(roles);
-const fuse = new Fuse(rows, {
-  keys: ["title", "categoryLabel", "excerpt"],
-  threshold: 0.35,
-  ignoreLocation: true,
-});
-const results = q ? fuse.search(q).map((r) => r.item) : [];
+const initialHits = filterHandbookSearchRows(rows, q);
+
+const totalHits = initialHits.length;
+const totalPages = totalHits === 0 ? 0 : Math.ceil(totalHits / PAGE_SIZE);
+const rawPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const currentPage =
+  totalPages === 0
+    ? 1
+    : Math.min(Math.max(1, Number.isFinite(rawPage) ? rawPage : 1), totalPages);
+
+const pagedHits =
+  totalPages === 0 ? [] : initialHits.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+function searchPageHref(pageNum: number, query: string): string {
+  const p = new URLSearchParams();
+  if (query) p.set("q", query);
+  if (pageNum > 1) p.set("page", String(pageNum));
+  const s = p.toString();
+  return s ? `/search?${s}` : "/search";
+}
+
+const showEmpty = q.length >= 2 && totalHits === 0;
+const showPagination = totalPages > 1;
+
+let metaLine: string;
+if (showEmpty) {
+  metaLine = "0 results";
+} else if (q.length < 2) {
+  metaLine = "Start typing to see results.";
+} else if (totalPages <= 1) {
+  metaLine = `${totalHits} result${totalHits === 1 ? "" : "s"}`;
+} else {
+  const from = (currentPage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(currentPage * PAGE_SIZE, totalHits);
+  metaLine = `Showing ${from}–${to} of ${totalHits} result${totalHits === 1 ? "" : "s"} (page ${currentPage} of ${totalPages})`;
+}
+
+const clientSearchIndex = rows.map((r) => ({
+  slug: r.slug,
+  title: r.title,
+  categoryLabel: r.categoryLabel,
+  subcategoryLabel: r.subcategoryLabel,
+  categoryId: r.categoryId,
+  description: r.description,
+  bodyPlain: r.bodyPlain,
+  ...categoryChromeFieldsForRow(r.categoryId),
+}));
+const searchPayloadB64 = utf8JsonToBase64(JSON.stringify(clientSearchIndex));
+const searchPayloadHtml =
+  '<textarea id="handbook-search-b64" hidden readonly aria-hidden="true" tabindex="-1" class="sr-only">' +
+  searchPayloadB64 +
+  "</textarea>";
 ---
 
-<HandbookLayout title="Search">
-  <h1 class="h1">Search</h1>
-  <form class="shell__search" action="/search" method="get" role="search">
-    <label class="sr-only" for="search-q">Query</label>
-    <input
-      id="search-q"
-      name="q"
-      type="search"
-      value={q}
-      placeholder="Search titles and text…"
-      autocomplete="off"
-    />
-    <button type="submit" class="btn btn--small btn--primary">Search</button>
-  </form>
-  <p class="search-meta">
-    {
-      q
-        ? `${results.length} result${results.length === 1 ? "" : "s"}`
-        : "Enter a search term."
-    }
+<HandbookLayout title="Search" showHeaderSearch={false} returnToParent={{ href: "/", label: "homepage" }}>
+  <p class="handbook-page-nav">
+    <a href="/">← Handbook home</a>
   </p>
-  {
-    q && results.length === 0 ? (
-      <p class="empty">No matches among pages you can access.</p>
-    ) : q ? (
-      <ul class="search-list" role="list">
-        {results.map((hit) => (
-          <li class="search-hit">
-            <h2 class="search-hit__title">
-              <a href={`/p/${hit.slug}`}>{hit.title}</a>
-            </h2>
-            <div class="search-hit__cat">{hit.categoryLabel}</div>
-            <p class="search-hit__excerpt">{hit.excerpt}</p>
-          </li>
-        ))}
-      </ul>
-    ) : null
-  }
+  <h1 class="h1">Search</h1>
+  <div set:html={searchPayloadHtml} hidden aria-hidden="true" />
+  <div class="search-page__toolbar">
+    <form class="shell__search" action="/search" method="get" role="search" id="search-form">
+      <label class="sr-only" for="search-q">Query</label>
+      <input
+        id="search-q"
+        name="q"
+        type="search"
+        value={q}
+        placeholder="Search keyword or page title..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button type="submit" class="btn btn--small btn--primary">Apply</button>
+    </form>
+    <p class="search-meta" id="search-meta">{metaLine}</p>
+    <p class="empty" id="search-empty" hidden={!showEmpty}>
+      No matches among pages you can access.
+    </p>
+  </div>
+  <ul class="search-list" id="search-results" role="list">
+    {
+      pagedHits.map((hit) => {
+        const snip = searchSnippetForHit(hit, q);
+        const chrome = categoryChromeFieldsForRow(hit.categoryId);
+        return (
+        <li class="search-hit">
+          <a class="search-hit__card" href={`/p/${hit.slug}`}>
+            <div class="search-hit__head">
+              <h2 class="search-hit__title">
+                <span
+                  class="search-hit__title-text"
+                  set:html={highlightQueryTermsInPlainText(hit.title, q)}
+                />
+              </h2>
+              <div
+                class:list={["search-hit__badges", chrome.chromeBrand && "search-hit__badges--cat-chrome"]}
+                role="group"
+                aria-label="Category"
+                style={
+                  chrome.chromeBrand
+                    ? {
+                        "--cat-chrome-brand": chrome.chromeBrand,
+                        ...(chrome.chromeOnBrand
+                          ? { "--cat-chrome-on-brand": chrome.chromeOnBrand }
+                          : {}),
+                      }
+                    : undefined
+                }
+              >
+                <span class="search-hit__badge search-hit__badge--category">{hit.categoryLabel}</span>
+                {hit.subcategoryLabel ? (
+                  <>
+                    <span class="search-hit__badge-arrow" aria-hidden="true">/</span>
+                    <span class="search-hit__badge search-hit__badge--subcategory">
+                      {hit.subcategoryLabel}
+                    </span>
+                  </>
+                ) : null}
+              </div>
+            </div>
+            {snip ? (
+              <p class="search-hit__snippet" set:html={highlightQueryTermsInPlainText(snip, q)} />
+            ) : null}
+          </a>
+        </li>
+        );
+      })
+    }
+  </ul>
+  <nav
+    id="search-pagination"
+    class="search-pagination"
+    aria-label="Search results pages"
+    hidden={!showPagination}
+  >
+    {
+      showPagination ? (
+        <>
+          {currentPage > 1 ? (
+            <a
+              class="search-pagination__link search-pagination__link--prev"
+              href={searchPageHref(currentPage - 1, q)}
+              data-search-page={currentPage - 1}
+            >
+              Previous
+            </a>
+          ) : (
+            <span class="search-pagination__link search-pagination__link--prev is-disabled">Previous</span>
+          )}
+          <span class="search-pagination__status" id="search-pagination-status">
+            Page {currentPage} of {totalPages}
+          </span>
+          {currentPage < totalPages ? (
+            <a
+              class="search-pagination__link search-pagination__link--next"
+              href={searchPageHref(currentPage + 1, q)}
+              data-search-page={currentPage + 1}
+            >
+              Next
+            </a>
+          ) : (
+            <span class="search-pagination__link search-pagination__link--next is-disabled">Next</span>
+          )}
+        </>
+      ) : null
+    }
+  </nav>
+  <script>
+    import { mountHandbookSearchPage } from "../lib/handbook-search-page-client";
+    mountHandbookSearchPage();
+  </script>
 </HandbookLayout>

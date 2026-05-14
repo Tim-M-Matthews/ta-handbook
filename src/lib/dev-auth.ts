@@ -1,4 +1,5 @@
 import type { Session } from "@auth/core/types";
+import { displayNameFromEmail } from "./display-name";
 import { rolesForEmail } from "./roles";
 
 function isTruthyEnv(value: string | undefined): boolean {
@@ -42,6 +43,20 @@ function localDevEmail(): string {
   return raw.toLowerCase();
 }
 
+function localDevDisplayName(email: string): string {
+  const fromProcess =
+    typeof process !== "undefined" && process.env.DEV_AUTH_NAME
+      ? process.env.DEV_AUTH_NAME.trim()
+      : "";
+  const fromMeta =
+    typeof import.meta.env.DEV_AUTH_NAME === "string"
+      ? import.meta.env.DEV_AUTH_NAME.trim()
+      : "";
+  const explicit = fromProcess || fromMeta;
+  if (explicit) return explicit;
+  return displayNameFromEmail(email) || "Local dev";
+}
+
 /**
  * Session used in `astro dev`: fixed workspace email, roles from `handbook-role-map.ts`
  * (same rules as production Google sign-in). If the email is missing from the map, grants
@@ -56,14 +71,9 @@ export function localDevPersonaSession(): Session {
     );
     roles = ["admin"];
   }
-  const localPart = email.split("@")[0] ?? "Local dev";
-  const display =
-    localPart.length > 0
-      ? localPart[0].toUpperCase() + localPart.slice(1)
-      : "Local dev";
   return {
     user: {
-      name: display,
+      name: localDevDisplayName(email),
       email,
       image: null,
       roles,

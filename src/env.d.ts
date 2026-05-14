@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly DISABLE_AUTH?: string;
   /** During `astro dev`, override the default local user email (`tim.matthews@triangleact.com`). */
   readonly DEV_AUTH_EMAIL?: string;
+  /** During `astro dev`, optional display name for the header (defaults from email local-part). */
+  readonly DEV_AUTH_NAME?: string;
 }
 
 interface ImportMeta {
@@ -30,6 +32,7 @@ declare module "@auth/core/types" {
 
 declare module "@auth/core/jwt" {
   interface JWT {
+    name?: string | null;
     roles?: string[];
   }
 }

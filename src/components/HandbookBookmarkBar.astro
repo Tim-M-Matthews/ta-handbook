@@ -1,0 +1,33 @@
+---
+interface Props {
+  slug: string;
+  title: string;
+  /** When set, bookmarks list uses this path (e.g. `/c/welcome`); otherwise `/p/{slug}`. */
+  href?: string;
+}
+
+const { slug, title, href } = Astro.props;
+---
+
+<div
+  class="handbook-bookmark-bar"
+  data-handbook-bookmark-bar
+  data-bookmark-slug={slug}
+  data-bookmark-title={title}
+  {...href ? { "data-bookmark-href": href } : {}}
+>
+  <button
+    type="button"
+    class="handbook-bookmark-btn btn btn--small"
+    aria-pressed="false"
+    aria-label="Add to bookmarks"
+  >
+    <svg class="handbook-bookmark-btn__icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        class="handbook-bookmark-btn__path"
+        d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"
+      />
+    </svg>
+    <span class="handbook-bookmark-btn__label">Add to bookmarks</span>
+  </button>
+</div>

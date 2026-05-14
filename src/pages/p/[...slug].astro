@@ -1,5 +1,6 @@
 ---
 import HandbookLayout from "../../layouts/HandbookLayout.astro";
+import HandbookBookmarkBar from "../../components/HandbookBookmarkBar.astro";
 import { categoryDefForId } from "../../lib/categories";
 import { renderHandbookBody } from "../../lib/body-render";
 import { getDocBySlug } from "../../lib/content";
@@ -23,17 +24,53 @@ if (
   return new Response(null, { status: 404 });
 }
 
+const returnToParent =
+  doc.subcategoryId && doc.subcategoryLabel
+    ? {
+        href: `/c/${encodeURIComponent(doc.categoryId)}/${encodeURIComponent(doc.subcategoryId)}`,
+        label: doc.subcategoryLabel,
+      }
+    : {
+        href: `/c/${encodeURIComponent(doc.categoryId)}`,
+        label: doc.categoryLabel,
+      };
+
 const html = renderHandbookBody(doc.body);
 ---
 
-<HandbookLayout title={`${doc.title} — Handbook`}>
-  <p style="margin: 0 0 1rem; font-size: 0.875rem">
+<HandbookLayout
+  title={`${doc.title} — Handbook`}
+  categoryChromeId={doc.categoryId}
+  returnToParent={returnToParent}
+>
+  <p class="handbook-page-nav">
     <a href="/">← Handbook home</a>
-    {" · "}
-    <span style="color: var(--muted)">{doc.categoryLabel}</span>
+    <span class="handbook-page-nav__crumbs" role="navigation" aria-label="Breadcrumb">
+      <a
+        class="handbook-page-nav__badge handbook-page-nav__badge--link"
+        href={`/c/${encodeURIComponent(doc.categoryId)}`}
+      >
+        {doc.categoryLabel}
+      </a>
+      {
+        doc.subcategoryId && doc.subcategoryLabel ? (
+          <>
+            <span class="handbook-page-nav__arrow" aria-hidden="true">/</span>
+            <a
+              class="handbook-page-nav__badge handbook-page-nav__badge--subcategory handbook-page-nav__badge--link"
+              href={`/c/${encodeURIComponent(doc.categoryId)}/${encodeURIComponent(doc.subcategoryId)}`}
+            >
+              {doc.subcategoryLabel}
+            </a>
+          </>
+        ) : null
+      }
+    </span>
   </p>
   <article class="prose">
     <h1>{doc.title}</h1>
+    {doc.description ? <p class="handbook-page-desc">{doc.description}</p> : null}
+    <HandbookBookmarkBar slug={doc.slug} title={doc.title} />
     <div set:html={html} />
   </article>
 </HandbookLayout>

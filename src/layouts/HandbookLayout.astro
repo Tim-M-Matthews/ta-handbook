@@ -1,12 +1,29 @@
 ---
 import "../styles/global.css";
 import { authBypassLabel, isAuthBypassed } from "../lib/dev-auth";
+import { firstNameFromDisplay } from "../lib/display-name";
+import { categoryChromeOnBrand, categoryChromeSwatch } from "../lib/category-chrome";
 
 interface Props {
   title?: string;
+  /** When false, omits the global header search (e.g. on `/search`, which has its own field). */
+  showHeaderSearch?: boolean;
+  /** Full-width page tint matching the homepage tile for this category (when configured). */
+  categoryChromeId?: string | null;
+  /** Centered footer link: "Return to {label}" (e.g. subcategory, category, or homepage). */
+  returnToParent?: { href: string; label: string } | null;
 }
 
-const { title = "Triangle ACT Handbook" } = Astro.props;
+const {
+  title = "Triangle ACT Handbook",
+  showHeaderSearch = true,
+  categoryChromeId = null,
+  returnToParent = null,
+} = Astro.props;
+
+const chromeId = categoryChromeId?.trim() ?? "";
+const catChromeBrand = chromeId ? categoryChromeSwatch(chromeId) : null;
+const catChromeOnBrand = chromeId ? categoryChromeOnBrand(chromeId) : null;
 const bypass = isAuthBypassed();
 const session = Astro.locals.session;
 
@@ -16,6 +33,13 @@ if (!bypass && !session?.user) {
 
 const email = session?.user?.email ?? "";
 const roles = session?.user?.roles ?? [];
+const displayName =
+  session?.user?.name?.trim() || email || "—";
+const firstName = firstNameFromDisplay(displayName);
+const accountMenuLabel = `Account menu (${displayName})`;
+const accountMenuTitle = bypass
+  ? authBypassLabel()
+  : [email, roles.length ? roles.join(", ") : null].filter(Boolean).join(" — ");
 ---
 
 <!doctype html>
@@ -23,53 +47,181 @@ const roles = session?.user?.roles ?? [];
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/file.svg" />
+    <meta name="format-detection" content="email=no,telephone=no,address=no" />
+    <link rel="icon" href="/favicon-48x48.png" sizes="48x48" type="image/png" />
+    <link rel="icon" href="/favicon-96x96.png" sizes="96x96" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
     <title>{title}</title>
+    <script is:inline set:html={`window.__HANDBOOK_BOOKMARKS_DEV__ = ${JSON.stringify(import.meta.env.DEV)};`} />
+    <script is:inline src="/js/handbook-bookmarks-client.js" defer></script>
   </head>
   <body>
-    <div class="shell">
+    <div
+      class:list={["shell", catChromeBrand && "shell--cat-chrome"]}
+      style={
+        catChromeBrand
+          ? {
+              "--cat-chrome-brand": catChromeBrand,
+              ...(catChromeOnBrand ? { "--cat-chrome-on-brand": catChromeOnBrand } : {}),
+            }
+          : undefined
+      }
+    >
       <header class="shell__header">
+        <div
+          class:list={[
+            "shell__header-inner",
+            !showHeaderSearch && "shell__header-inner--no-global-search",
+          ]}
+        >
         <div class="shell__brand">
-          <a href="/">Triangle ACT Handbook</a>
+          <a
+            href="/"
+            class="shell__brand-link"
+            aria-label="Triangle ACT Employee Handbook home"
+          >
+            <img
+              class="shell__brand-logo"
+              src="/brand-logo.png"
+              alt=""
+              decoding="async"
+            />
+            <span class="shell__brand-tagline">Employee Handbook</span>
+          </a>
         </div>
-        <form class="shell__search" action="/search" method="get" role="search">
-          <label class="sr-only" for="global-search">Search handbook</label>
-          <input
-            id="global-search"
-            name="q"
-            type="search"
-            placeholder="Search…"
-            autocomplete="off"
-          />
-          <button type="submit" class="btn btn--small">Search</button>
-        </form>
-        <div class="shell__user">
-          <span
-            class="shell__email"
-            title={bypass ? authBypassLabel() : roles.join(", ")}
-            >{email}</span>
-          {
-            bypass ? null : (
-              <button type="button" class="btn btn--ghost" id="signout">
-                Sign out
-              </button>
-            )
-          }
+        {
+          showHeaderSearch ? (
+            <div class="shell__search-wrap">
+              <form class="shell__search" action="/search" method="get" role="search">
+                <label class="sr-only" for="global-search">Search handbook</label>
+                <input
+                  id="global-search"
+                  name="q"
+                  type="search"
+                  placeholder="Search keyword or page title..."
+                  autocomplete="off"
+                />
+                <button type="submit" class="btn btn--small">Search</button>
+              </form>
+              <div
+                id="header-search-popover"
+                class="header-search-popover"
+                hidden
+                aria-live="polite"
+              ></div>
+            </div>
+          ) : null
+        }
+        <div class="shell__header-trail">
+          <div class="shell__user">
+          <div class="shell__user-menu">
+            <button
+              type="button"
+              class="shell__user-menu__toggle"
+              id="user-menu-toggle"
+              aria-expanded="false"
+              aria-haspopup="true"
+              aria-controls="user-menu-dropdown"
+              aria-label={accountMenuLabel}
+              title={accountMenuTitle}
+            >
+              <svg
+                class="shell__user-menu__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span class="shell__user-menu__name-full">{displayName}</span>
+              <span class="shell__user-menu__name-first">{firstName}</span>
+            </button>
+            <div
+              id="user-menu-dropdown"
+              class="shell__user-menu__dropdown"
+              hidden
+              role="menu"
+              aria-labelledby="user-menu-toggle"
+            >
+              {
+                bypass ? (
+                  <p class="shell__user-menu__hint" role="note">
+                    Auth bypass — sign out is not available.
+                  </p>
+                ) : (
+                  <button type="button" role="menuitem" class="shell__user-menu__item" id="signout">
+                    Sign out
+                  </button>
+                )
+              }
+            </div>
+          </div>
+          </div>
+        </div>
         </div>
       </header>
+      {showHeaderSearch ? (
+        <script is:inline src="/js/handbook-header-search.js" defer></script>
+      ) : null}
       <main class="shell__main">
         <slot />
+        {
+          returnToParent ? (
+            <nav class="handbook-page-return" aria-label="Parent page">
+              <a class="handbook-page-return__link" href={returnToParent.href}>
+                Return to {returnToParent.label}
+              </a>
+            </nav>
+          ) : null
+        }
       </main>
     </div>
-    {
-      bypass ? null : (
-        <script>
-          import { signOut } from "auth-astro/client";
-          document.getElementById("signout")?.addEventListener("click", () => {
-            void signOut({ callbackUrl: "/login" } as never);
-          });
-        </script>
-      )
-    }
+    <script>
+      import { signOut } from "auth-astro/client";
+
+      document.getElementById("signout")?.addEventListener("click", () => {
+        void signOut({ callbackUrl: "/login" } as never);
+      });
+
+      const toggle = document.getElementById("user-menu-toggle");
+      const menu = document.getElementById("user-menu-dropdown");
+      if (toggle && menu) {
+        const t = toggle;
+        const m = menu;
+        function closeMenu() {
+          m.hidden = true;
+          t.setAttribute("aria-expanded", "false");
+        }
+        function openMenu() {
+          m.hidden = false;
+          t.setAttribute("aria-expanded", "true");
+        }
+        t.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (m.hidden) openMenu();
+          else closeMenu();
+        });
+        document.addEventListener("click", (e) => {
+          if (
+            !m.hidden &&
+            e.target instanceof Node &&
+            !t.contains(e.target) &&
+            !m.contains(e.target)
+          ) {
+            closeMenu();
+          }
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !m.hidden) closeMenu();
+        });
+      }
+    </script>
   </body>
 </html>

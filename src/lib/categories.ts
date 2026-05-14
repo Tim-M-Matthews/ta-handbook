@@ -6,16 +6,18 @@ export type CategoryDef = {
   order: number;
   /** If non-empty, only users with one of these roles (or admin) see pages in this category. */
   roles: string[];
+  /** Optional short summary from frontmatter `description`. */
+  description: string | null;
 };
 
-const rawCategoryModules = import.meta.glob<string>("../../content/categories/*.md", {
+const rawCategoryModules = import.meta.glob<string>("../../content/pages/*/_category-meta.md", {
   query: "?raw",
   import: "default",
   eager: true,
 });
 
 function idFromGlobKey(key: string): string | null {
-  const m = key.match(/content\/categories\/(.+)\.md$/);
+  const m = key.match(/content\/pages\/([^/]+)\/_category-meta\.md$/);
   return m ? m[1] : null;
 }
 
@@ -36,7 +38,11 @@ function buildCategoryMap(): Map<string, CategoryDef> {
     const title =
       typeof d.title === "string" && d.title.trim() ? d.title.trim() : id;
     const order = typeof d.order === "number" ? d.order : 0;
-    map.set(id, { id, title, order, roles: parseRoles(d) });
+    const description =
+      typeof d.description === "string" && d.description.trim()
+        ? d.description.trim()
+        : null;
+    map.set(id, { id, title, order, roles: parseRoles(d), description });
   }
   return map;
 }
@@ -68,6 +74,7 @@ export function categoryDefForId(id: string): CategoryDef {
     title: fallbackCategoryTitle(id),
     order: 9999,
     roles: [],
+    description: null,
   };
 }
 

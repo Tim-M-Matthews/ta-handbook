@@ -1,6 +1,6 @@
 # Triangle ACT Handbook (Astro)
 
-Internal handbook: **Markdown in `content/pages/`** and **category metadata in `content/categories/`** (GitHub + optional **[GitCMS](https://gitcms.dev/)**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** ([`src/lib/handbook-role-map.ts`](src/lib/handbook-role-map.ts)), and **server-side search** (Fuse.js). No database—content lives in the repo; deploys build from Git.
+Internal handbook: **Markdown under `content/pages/`** (including per-folder **`_category-meta.md`** for category and subcategory settings—those files are not published as pages) (GitHub + optional **[GitCMS](https://gitcms.dev/)**), **Google sign-in** (Auth.js via `auth-astro`), **role-based access** ([`src/lib/handbook-role-map.ts`](src/lib/handbook-role-map.ts)), and **search** (substring / word match on titles and excerpts). No database—content lives in the repo; deploys build from Git.
 
 ## Requirements
 
@@ -70,11 +70,11 @@ The app reads the Google profile **email**, looks up **`handbook-role-map.ts`**,
 
 ## Content (GitHub)
 
-Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/clinical/guide.md` → slug `clinical/guide`). Merge to the branch your host builds from (e.g. `main`) to publish.
+Editors add or change **Markdown under `content/pages/`** in this repository (nested folders are fine, e.g. `content/pages/welcome/welcome-to-triangle-act.md` → slug `welcome/welcome-to-triangle-act`). Merge to the branch your host builds from (e.g. `main`) to publish.
 
-**Categories:** each page’s frontmatter `category` is an **id** that matches a file `content/categories/{id}.md`. That file holds the **section title** (`title`), **sort order among sections** (`order`), and optional **`roles`** that apply to the whole category (users must pass the category gate and any page-level `roles`). GitCMS can manage this as a second collection (see `.gitcms/`).
+**Categories:** the **first folder** under `content/pages/` is the category id (e.g. `employment/employment-basics/roles-responsibilities.md` → category `employment`, subcategory `employment-basics`). Section title, sort order, optional **`roles`** for the whole category, and optional **`description`** live in **`content/pages/{category}/_category-meta.md`** (YAML frontmatter; body is optional notes for editors). Subcategory title/description use **`content/pages/{category}/{subcategory}/_category-meta.md`**. Files named **`_category-meta.md`** are never built as handbook pages. GitCMS can use a single **Pages** collection on `content/pages` (see `.gitcms/`).
 
-**Sitemap:** **`GET /sitemap.xml`** (`src/pages/sitemap.xml.ts`) returns a URL list with `/`, `/search`, and each `/p/{slug}` from `content/pages/**/*.md`. For stable production `<loc>` URLs, set **`PUBLIC_SITE_URL`** (see `.env.example`); it also sets Astro’s **`site`** in `astro.config.mjs`. If unset, the sitemap uses the request origin (e.g. local dev).
+**Sitemap:** **`GET /sitemap.xml`** (`src/pages/sitemap.xml.ts`) returns a URL list with `/`, `/search`, category and subcategory index URLs, and each **`/p/{slug}`** from real pages only (paths ending in **`_category-meta.md`** are excluded). For stable production `<loc>` URLs, set **`PUBLIC_SITE_URL`** (see `.env.example`); it also sets Astro’s **`site`** in `astro.config.mjs`. If unset, the sitemap uses the request origin (e.g. local dev).
 
 ### GitCMS (optional UI)
 
@@ -84,7 +84,7 @@ Editors add or change **Markdown under `content/pages/`** in this repository (ne
 2. **Connect repository** and install the **GitCMS GitHub App** for this repo (read/write on repo contents only).
 3. In **Settings**, configure at least:
    - **Framework:** Astro (often auto-detected).
-   - **Collections:** (1) **Pages** — **`content/pages`**, **`.md`**, YAML frontmatter: `title`, **`category`** (id matching a category file), `order`, optional `roles`, body. (2) **Categories** — **`content/categories`**, **`.md`**, YAML: `title`, `order`, optional `roles` (same semantics as pages; empty = any signed-in handbook user). Filename stem = id (e.g. `clinical.md` → pages use `category: clinical`).
+   - **Collections:** **Pages** — **`content/pages`**, **`.md`**, grouped by folder. Page markdown: YAML frontmatter such as `title`, `order`, optional `roles`, body. Category section settings: **`_category-meta.md`** at `content/pages/{category}/_category-meta.md`. Subcategory settings: **`content/pages/{category}/{subcategory}/_category-meta.md`**. Placement is by folder path; frontmatter **`category`** on a page is not used for placement (legacy `resolveCategoryId` may still read it when resolving ids).
    - **Media path:** e.g. **`public/handbook-media`** so uploads match Astro’s `public/` URLs (**`/handbook-media/...`**).
 4. **Commit** the **`.gitcms/`** folder when GitCMS adds it so teammates and CI see the same config.
 
@@ -101,7 +101,7 @@ Frontmatter and roles behave the same as when editing files in GitHub.
 | Field        | Purpose |
 | ------------ | ------- |
 | `title`      | Page title (defaults to filename if omitted) |
-| `category`   | **Category id** — must match `content/categories/{id}.md` (e.g. `clinical`). Older pages may still use a display name; the app resolves it when possible. |
+| `category`   | Legacy / optional — placement uses the **folder path** under `content/pages/`. If present, may help **`resolveCategoryId`** match an id or title. Prefer relying on folder layout and **`_category-meta.md`** for section metadata. |
 | `roles`      | Optional extra gate for this page only (string or array); omit or empty = any user who already passes the **category** roles. `admin` always sees everything. |
 | `order`      | Sort order within the category (number) |
 
@@ -126,4 +126,3 @@ In Cloudflare, use **Workers Builds** (or equivalent): **Build command** `npm ru
 - [auth-astro](https://github.com/nowaythatworked/auth-astro) + [Auth.js](https://authjs.dev/) (Google)
 - [GitCMS](https://gitcms.dev/) (optional content UI; config in `.gitcms/` from their Settings)
 - [marked](https://marked.js.org/) (GFM) for article HTML
-- [Fuse.js](https://fusejs.io/) for search

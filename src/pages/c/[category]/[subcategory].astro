@@ -1,0 +1,95 @@
+---
+import HandbookLayout from "../../../layouts/HandbookLayout.astro";
+import HandbookBookmarkBar from "../../../components/HandbookBookmarkBar.astro";
+import { categoryDefForId, resolveCategoryId } from "../../../lib/categories";
+import {
+  listMetaForSubcategory,
+  subcategoryExistsInSite,
+} from "../../../lib/content";
+import {
+  subcategoryDefForPair,
+  subcategoryTitleForPair,
+} from "../../../lib/subcategories";
+import { userCanViewPage } from "../../../lib/roles";
+
+const rawCat = Astro.params.category;
+const rawSub = Astro.params.subcategory;
+if (
+  typeof rawCat !== "string" ||
+  !rawCat.trim() ||
+  rawCat.includes("..") ||
+  rawCat.includes("/") ||
+  typeof rawSub !== "string" ||
+  !rawSub.trim() ||
+  rawSub.includes("..") ||
+  rawSub.includes("/")
+) {
+  return new Response(null, { status: 404 });
+}
+
+const categoryId = resolveCategoryId(rawCat);
+const subcategoryId = rawSub.trim();
+if (!subcategoryExistsInSite(categoryId, subcategoryId)) {
+  return new Response(null, { status: 404 });
+}
+
+const session = Astro.locals.session!;
+const userRoles = session.user?.roles ?? [];
+const cat = categoryDefForId(categoryId);
+if (!userCanViewPage(userRoles, cat.roles)) {
+  return new Response(null, { status: 404 });
+}
+
+const pages = listMetaForSubcategory(userRoles, categoryId, subcategoryId);
+const subDef = subcategoryDefForPair(categoryId, subcategoryId);
+const subLabel = subcategoryTitleForPair(categoryId, subcategoryId);
+const subDescription = subDef?.description ?? null;
+const bookmarkSlug = `c/${categoryId}/${subcategoryId}`;
+const bookmarkHref = `/c/${encodeURIComponent(categoryId)}/${encodeURIComponent(subcategoryId)}`;
+const bookmarkTitle = `${subLabel} — ${cat.title}`;
+---
+
+<HandbookLayout
+  title={`${subLabel} — ${cat.title} — Handbook`}
+  categoryChromeId={categoryId}
+  returnToParent={{
+    href: `/c/${encodeURIComponent(categoryId)}`,
+    label: cat.title,
+  }}
+>
+  <p class="handbook-page-nav">
+    <a href="/">← Handbook home</a>
+    <span class="handbook-page-nav__crumbs" role="navigation" aria-label="Breadcrumb">
+      <a
+        class="handbook-page-nav__badge handbook-page-nav__badge--link"
+        href={`/c/${encodeURIComponent(categoryId)}`}
+      >
+        {cat.title}
+      </a>
+      <span class="handbook-page-nav__arrow" aria-hidden="true">/</span>
+      <span class="handbook-page-nav__badge handbook-page-nav__badge--subcategory">{subLabel}</span>
+    </span>
+  </p>
+  <h1 class="h1">{subLabel}</h1>
+  {cat.description ? <p class="cat__desc">{cat.description}</p> : null}
+  {subDescription ? <p class="cat__desc cat__desc--sub">{subDescription}</p> : null}
+  <HandbookBookmarkBar slug={bookmarkSlug} title={bookmarkTitle} href={bookmarkHref} />
+  {
+    pages.length === 0 ? (
+      <p class="empty">No pages in this subcategory match your access.</p>
+    ) : (
+      <ul class="cat__list" role="list">
+        {pages.map((p) => (
+          <li class="cat__item">
+            <a class="cat__link" href={`/p/${p.slug}`} data-handbook-page-slug={p.slug}>
+              <span class="cat__link-heading">
+                <span class="cat__link-title">{p.title}</span>
+              </span>
+              {p.description ? <span class="cat__link-desc">{p.description}</span> : null}
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</HandbookLayout>

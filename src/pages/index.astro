@@ -1,27 +1,114 @@
 ---
 import HandbookLayout from "../layouts/HandbookLayout.astro";
+import { categoryDefForId } from "../lib/categories";
+import { categoryChromeFieldsForRow, categoryChromeSwatch } from "../lib/category-chrome";
 import { isAuthBypassed, isLocalDevPersona } from "../lib/dev-auth";
-import { listMetaForRoles } from "../lib/content";
+import {
+  categoryExistsInSite,
+  getAllCategoryIndexIds,
+  getAllSubcategoryIndexPairs,
+  homeSectionsForRoles,
+  listMetaForCategory,
+  listMetaForRoles,
+  listMetaForSubcategory,
+} from "../lib/content";
+import { userCanViewPage } from "../lib/roles";
+import { subcategoryTitleForPair } from "../lib/subcategories";
+
+function utf8ToBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
+  return btoa(bin);
+}
 
 const session = Astro.locals.session!;
 const roles = session.user?.roles ?? [];
-const pages = listMetaForRoles(roles);
-/** `listMetaForRoles` is sorted by category order, then page order — group consecutive sections. */
-const sections: { id: string; label: string; pages: typeof pages }[] = [];
-for (const p of pages) {
-  const last = sections[sections.length - 1];
-  if (!last || last.id !== p.categoryId) {
-    sections.push({ id: p.categoryId, label: p.categoryLabel, pages: [p] });
-  } else {
-    last.pages.push(p);
-  }
-}
+const sections = homeSectionsForRoles(roles);
 const bypass = isAuthBypassed();
 const localPersona = isLocalDevPersona();
+
+type BookmarkCrumbRow = {
+  categoryLabel: string;
+  subcategoryLabel?: string;
+  categoryId: string;
+  chromeBrand?: string;
+  chromeOnBrand?: string;
+};
+const bookmarkCrumbLookup: Record<string, BookmarkCrumbRow> = {};
+
+for (const m of listMetaForRoles(roles)) {
+  const row: BookmarkCrumbRow = {
+    categoryLabel: m.categoryLabel,
+    categoryId: m.categoryId,
+    ...categoryChromeFieldsForRow(m.categoryId),
+  };
+  if (m.subcategoryLabel) row.subcategoryLabel = m.subcategoryLabel;
+  bookmarkCrumbLookup[m.slug] = row;
+}
+
+for (const { categoryId, subcategoryId } of getAllSubcategoryIndexPairs()) {
+  if (listMetaForSubcategory(roles, categoryId, subcategoryId).length === 0) continue;
+  const cat = categoryDefForId(categoryId);
+  if (!userCanViewPage(roles, cat.roles)) continue;
+  bookmarkCrumbLookup[`c/${categoryId}/${subcategoryId}`] = {
+    categoryLabel: cat.title,
+    subcategoryLabel: subcategoryTitleForPair(categoryId, subcategoryId),
+    categoryId,
+    ...categoryChromeFieldsForRow(categoryId),
+  };
+}
+
+for (const categoryId of getAllCategoryIndexIds()) {
+  if (!categoryExistsInSite(categoryId)) continue;
+  const cat = categoryDefForId(categoryId);
+  if (!userCanViewPage(roles, cat.roles)) continue;
+  if (listMetaForCategory(roles, categoryId).length === 0) continue;
+  bookmarkCrumbLookup[`c/${categoryId}`] = {
+    categoryLabel: cat.title,
+    categoryId,
+    ...categoryChromeFieldsForRow(categoryId),
+  };
+}
+
+const bookmarkCrumbsB64 = utf8ToBase64(JSON.stringify(bookmarkCrumbLookup));
 ---
 
-<HandbookLayout title="Handbook">
-  <h1 class="h1">Handbook</h1>
+<HandbookLayout title="Triangle ACT Handbook">
+  <div class="home-bookmarks-bar">
+    <button type="button" class="btn btn--small" id="handbook-bookmarks-open">
+      Open bookmarks
+    </button>
+  </div>
+  <div
+    id="handbook-bookmarks-modal"
+    class="handbook-bookmarks-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="handbook-bookmarks-modal-title"
+    data-handbook-bookmark-crumbs-b64={bookmarkCrumbsB64}
+  >
+    <div class="handbook-bookmarks-modal__panel">
+      <div class="handbook-bookmarks-modal__head">
+        <h2 id="handbook-bookmarks-modal-title" class="handbook-bookmarks-modal__title">Bookmarks</h2>
+        <div class="handbook-bookmarks-modal__head-actions">
+          <button type="button" class="btn btn--small" id="handbook-bookmarks-edit" aria-pressed="false">
+            Edit bookmarks
+          </button>
+          <button
+            type="button"
+            class="btn btn--small"
+            id="handbook-bookmarks-modal-close"
+            aria-label="Close bookmarks"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      <div id="handbook-bookmarks-modal-list" class="handbook-bookmarks-modal__list"></div>
+    </div>
+  </div>
   {
     bypass && localPersona ? (
       <aside
@@ -46,7 +133,12 @@ const localPersona = isLocalDevPersona();
         </div>
         <div class="dev-callout__body">
           <p>
-            You're signed in as <strong>{session.user?.email ?? "—"}</strong>.
+            You're signed in as{" "}
+            <strong>{(session.user?.name?.trim() || session.user?.email) ?? "—"}</strong>
+            {session.user?.name?.trim() && session.user?.email ? (
+              <span> ({session.user.email})</span>
+            ) : null}
+            .
           </p>
           <p>Google OAuth is not used on this machine.</p>
           <p>
@@ -61,8 +153,8 @@ const localPersona = isLocalDevPersona();
             to see changes.
           </p>
           <p>
-            Optional: set <code>DEV_AUTH_EMAIL</code> in <code>.env</code> to impersonate another
-            user.
+            Optional: set <code>DEV_AUTH_EMAIL</code> or <code>DEV_AUTH_NAME</code> in <code>.env</code>{" "}
+            to impersonate another user or label.
           </p>
         </div>
       </aside>
@@ -111,22 +203,31 @@ const localPersona = isLocalDevPersona();
         No pages available yet. Add markdown under <code>content/pages</code>.
       </p>
     ) : (
-      sections.map((sec) => (
-        <section class="cat" aria-labelledby={`cat-${sec.id}`}>
-          <h2 id={`cat-${sec.id}`} class="cat__title">
-            {sec.label}
-          </h2>
-          <ul class="cat__list" role="list">
-            {sec.pages.map((p) => (
-              <li class="cat__item">
-                <a class="cat__link" href={`/p/${p.slug}`}>
-                  {p.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))
+      <ul class="home-cat-grid" role="list">
+        {sections.map((sec) => {
+          const catChromeBrand = categoryChromeSwatch(sec.categoryId);
+          return (
+          <li
+            class:list={[
+              "home-cat-grid__cell",
+              catChromeBrand && "home-cat-grid__cell--cat-chrome",
+            ]}
+            data-category={sec.categoryId}
+            style={catChromeBrand ? { "--cat-chrome-brand": catChromeBrand } : undefined}
+          >
+            <a
+              class="home-cat-grid__btn"
+              href={`/c/${encodeURIComponent(sec.categoryId)}`}
+            >
+              <span class="home-cat-grid__label">{sec.categoryLabel}</span>
+              {sec.categoryDescription ? (
+                <span class="home-cat-grid__desc">{sec.categoryDescription}</span>
+              ) : null}
+            </a>
+          </li>
+          );
+        })}
+      </ul>
     )
   }
   {

@@ -1,6 +1,6 @@
 ---
 title: "Noise Machines"
 order: 20
-status: draft
+status: todo
 ---
 

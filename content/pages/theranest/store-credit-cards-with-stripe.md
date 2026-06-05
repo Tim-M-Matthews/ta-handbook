@@ -1,6 +1,6 @@
 ---
 title: "Store Credit Cards with Stripe"
 order: 70
-status: complete
+status: todo
 ---
 

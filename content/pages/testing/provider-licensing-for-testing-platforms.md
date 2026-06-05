@@ -1,6 +1,6 @@
 ---
 title: "Provider Licensing for Testing Platforms"
 order: 70
-status: draft
+status: todo
 ---
 

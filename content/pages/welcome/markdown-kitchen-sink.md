@@ -1,7 +1,7 @@
 ---
 title: "Markdown Kitchen Sink"
 order: 50
-status: complete
+status: todo
 ---
 
 <p id="text">Plain paragraph with no formatting inside.</p>

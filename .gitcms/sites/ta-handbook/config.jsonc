@@ -1,6 +1,28 @@
 {
-  "version": "1",
-  "media_path": "/public",
+  "version": "1.2",
+  "media": {
+    "default_library": "repo_media",
+    "libraries": [
+      {
+        "key": "repo_media",
+        "label": "Repository media",
+        "references": {
+          "write": {
+            "mode": "root_relative",
+            "base_path": "/"
+          },
+          "allow_default_library_fallback": true
+        },
+        "limits": {
+          "max_file_size_mb": 10
+        },
+        "driver": "git",
+        "storage": {
+          "root_path": "public"
+        }
+      }
+    ]
+  },
   "ssg_framework": "astro",
   "frontmatter_format": "yaml",
   "publishing_mode": "direct_publish",
@@ -16,22 +38,21 @@
           "name": "title",
           "type": "title",
           "label": "Title",
-          "required": true,
+          "required": true
         },
         {
           "name": "order",
           "type": "number",
-          "label": "Order",
+          "label": "Order"
         },
         {
           "name": "description",
-          "type": "text",
-          "label": "Description",
+          "type": "text"
         },
         {
           "name": "category",
           "type": "text",
-          "label": "Category (opt  ional, legacy)",
+          "label": "Category (optional, legacy)"
         },
         {
           "name": "status",
@@ -40,18 +61,18 @@
           "options": [
             { "value": "todo", "label": "To-do" },
             { "value": "draft", "label": "Draft" },
-            { "value": "complete", "label": "Complete" },
+            { "value": "complete", "label": "Complete" }
           ],
-          "color": "purple",
+          "color": "purple"
         },
         {
           "name": "roles",
           "type": "multiselect",
           "label": "Roles",
           "options": ["clinical", "staff", "admin"],
-          "color": "blue",
-        },
-      ],
-    },
-  ],
+          "color": "blue"
+        }
+      ]
+    }
+  ]
 }

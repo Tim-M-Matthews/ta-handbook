@@ -28,10 +28,10 @@
   "publishing_mode": "direct_publish",
   "collections": [
     {
-      "name": "Pages",
+      "name": "pages",
       "git_path": "/content/pages/",
       "file_extension": ".md",
-      "filename_pattern": "-",
+      "filename_pattern": "",
       "collection_type": "grouped",
       "frontmatter_schema": [
         {
@@ -47,30 +47,27 @@
         },
         {
           "name": "description",
-          "type": "text"
+          "type": "richtext",
+          "label": "Description"
         },
         {
-          "name": "category",
-          "type": "text",
-          "label": "Category (optional, legacy)"
+          "name": "access_level",
+          "type": "select",
+          "label": "Access Level",
+          "options": [
+            "staff",
+            "admin"
+          ]
         },
         {
           "name": "status",
           "type": "select",
           "label": "Status",
           "options": [
-            { "value": "todo", "label": "To-do" },
-            { "value": "draft", "label": "Draft" },
-            { "value": "complete", "label": "Complete" }
-          ],
-          "color": "purple"
-        },
-        {
-          "name": "roles",
-          "type": "multiselect",
-          "label": "Roles",
-          "options": ["clinical", "staff", "admin"],
-          "color": "blue"
+            "todo",
+            "draft",
+            "published"
+          ]
         }
       ]
     }

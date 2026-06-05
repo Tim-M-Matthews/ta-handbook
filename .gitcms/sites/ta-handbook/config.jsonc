@@ -31,7 +31,18 @@
         {
           "name": "category",
           "type": "text",
-          "label": "Category (optional, legacy)",
+          "label": "Category (opt  ional, legacy)",
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "label": "Status",
+          "options": [
+            { "value": "todo", "label": "To-do" },
+            { "value": "draft", "label": "Draft" },
+            { "value": "complete", "label": "Complete" },
+          ],
+          "color": "purple",
         },
         {
           "name": "roles",

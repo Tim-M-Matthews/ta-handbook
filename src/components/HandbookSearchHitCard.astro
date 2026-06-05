@@ -1,0 +1,85 @@
+---
+import HandbookPageStatusIcon from "./HandbookPageStatusIcon.astro";
+import { categoryChromeFieldsForRow } from "../lib/category-chrome";
+import type { PageStatus } from "../lib/page-status";
+import { highlightQueryTermsInPlainText } from "../lib/search-query-highlight";
+
+interface Props {
+  slug: string;
+  title: string;
+  categoryLabel: string;
+  subcategoryLabel: string | null;
+  categoryId: string;
+  status: PageStatus;
+  userRoles: string[];
+  showStatusUi?: boolean;
+  snippet?: string | null;
+  /** When set, highlights matching terms in title and snippet (search page). */
+  highlightQuery?: string;
+}
+
+const {
+  slug,
+  title,
+  categoryLabel,
+  subcategoryLabel,
+  categoryId,
+  status,
+  userRoles,
+  showStatusUi = true,
+  snippet = null,
+  highlightQuery = "",
+} = Astro.props;
+
+const chrome = categoryChromeFieldsForRow(categoryId);
+const q = highlightQuery.trim();
+---
+
+<li class="search-hit">
+  <a class="search-hit__card" href={`/p/${slug}`}>
+    <div class="search-hit__head">
+      <h2 class="search-hit__title">
+        <HandbookPageStatusIcon status={status} userRoles={userRoles} showStatusUi={showStatusUi} />
+        <span
+          class="search-hit__title-text"
+          set:html={q ? highlightQueryTermsInPlainText(title, q) : title}
+        />
+      </h2>
+      <div
+        class:list={["search-hit__badges", chrome.chromeBrand && "search-hit__badges--cat-chrome"]}
+        role="group"
+        aria-label="Category"
+        style={
+          chrome.chromeBrand
+            ? {
+                "--cat-chrome-brand": chrome.chromeBrand,
+                ...(chrome.chromeOnBrand
+                  ? { "--cat-chrome-on-brand": chrome.chromeOnBrand }
+                  : {}),
+              }
+            : undefined
+        }
+      >
+        <span class="search-hit__badge search-hit__badge--category">{categoryLabel}</span>
+        {
+          subcategoryLabel ? (
+            <>
+              <span class="search-hit__badge-arrow" aria-hidden="true">/</span>
+              <span class="search-hit__badge search-hit__badge--subcategory">
+                {subcategoryLabel}
+              </span>
+            </>
+          ) : null
+        }
+      </div>
+    </div>
+    {
+      snippet ? (
+        <p
+          class="search-hit__snippet"
+          set:html={q ? highlightQueryTermsInPlainText(snippet, q) : snippet}
+        />
+      ) : null
+    }
+  </a>
+</li>

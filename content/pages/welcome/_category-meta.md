@@ -1,7 +1,6 @@
 ---
 title: "Welcome"
 order: 10
-description: "Brief orientation to Triangle ACT, the purpose of the handbook, and the practice’s overall values."
+description: "Introductory information for staff and administrators using the handbook."
 ---
 
-_Placeholder — replace with final copy._

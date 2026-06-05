@@ -10,6 +10,7 @@ import {
   subcategoryDescriptionForPair,
   subcategoryTitleForPair,
 } from "./subcategories";
+import { parsePageStatus, userCanViewPageByStatus, type PageStatus } from "./page-status";
 import { userCanViewPage } from "./roles";
 
 export type HandbookMeta = {
@@ -33,6 +34,8 @@ export type HandbookMeta = {
   description: string | null;
   /** Page-level roles; empty = any viewer who passes the category gate may read. */
   roles: string[];
+  /** Editorial status; `todo` and `draft` are admin-only. Defaults to `todo`. */
+  status: PageStatus;
   order: number;
 };
 
@@ -106,6 +109,7 @@ function metaFromMatter(
     roles = [data.roles.trim()];
   }
   const order = typeof data.order === "number" ? data.order : 0;
+  const status = parsePageStatus(data.status);
   return {
     title,
     categoryId,
@@ -114,8 +118,23 @@ function metaFromMatter(
     subcategoryLabel,
     description,
     roles,
+    status,
     order,
   };
+}
+
+/** Category, page roles, status gates, and per-user hidden statuses. */
+export function handbookPageVisibleToUser(
+  userRoles: string[],
+  meta: HandbookMeta,
+  hiddenStatuses: PageStatus[] = [],
+): boolean {
+  const cat = categoryDefForId(meta.categoryId);
+  return (
+    userCanViewPage(userRoles, cat.roles) &&
+    userCanViewPage(userRoles, meta.roles) &&
+    userCanViewPageByStatus(userRoles, meta.status, hiddenStatuses)
+  );
 }
 
 const docsBySlug = new Map<string, HandbookDoc>();
@@ -163,8 +182,11 @@ export function groupPagesBySubcategory(
   }));
 }
 
-export function homeSectionsForRoles(userRoles: string[]): HandbookHomeSection[] {
-  const pages = listMetaForRoles(userRoles);
+export function homeSectionsForRoles(
+  userRoles: string[],
+  hiddenStatuses: PageStatus[] = [],
+): HandbookHomeSection[] {
+  const pages = listMetaForRoles(userRoles, hiddenStatuses);
   const catOrder: string[] = [];
   const seen = new Set<string>();
   for (const p of pages) {
@@ -183,12 +205,13 @@ export function homeSectionsForRoles(userRoles: string[]): HandbookHomeSection[]
   });
 }
 
-export function listMetaForRoles(userRoles: string[]): HandbookMeta[] {
+export function listMetaForRoles(
+  userRoles: string[],
+  hiddenStatuses: PageStatus[] = [],
+): HandbookMeta[] {
   const metas: HandbookMeta[] = [];
   for (const doc of docsBySlug.values()) {
-    const cat = categoryDefForId(doc.categoryId);
-    if (!userCanViewPage(userRoles, cat.roles)) continue;
-    if (!userCanViewPage(userRoles, doc.roles)) continue;
+    if (!handbookPageVisibleToUser(userRoles, doc, hiddenStatuses)) continue;
     metas.push({
       slug: doc.slug,
       title: doc.title,
@@ -198,6 +221,7 @@ export function listMetaForRoles(userRoles: string[]): HandbookMeta[] {
       subcategoryLabel: doc.subcategoryLabel,
       description: doc.description,
       roles: doc.roles,
+      status: doc.status,
       order: doc.order,
     });
   }
@@ -240,20 +264,24 @@ export function subcategoryExistsInSite(
 export function listMetaForCategory(
   userRoles: string[],
   categoryParam: string,
+  hiddenStatuses: PageStatus[] = [],
 ): HandbookMeta[] {
   const want = resolveCategoryId(categoryParam);
-  return listMetaForRoles(userRoles).filter((m) => m.categoryId === want);
+  return listMetaForRoles(userRoles, hiddenStatuses).filter((m) => m.categoryId === want);
 }
 
 export function listMetaForSubcategory(
   userRoles: string[],
   categoryParam: string,
   subcategoryParam: string,
+  hiddenStatuses: PageStatus[] = [],
 ): HandbookMeta[] {
   const cat = resolveCategoryId(categoryParam);
   const sub = subcategoryParam.trim();
   if (!sub || sub.includes("..") || sub.includes("/")) return [];
-  return listMetaForCategory(userRoles, cat).filter((m) => m.subcategoryId === sub);
+  return listMetaForCategory(userRoles, cat, hiddenStatuses).filter(
+    (m) => m.subcategoryId === sub,
+  );
 }
 
 /** Distinct category ids for sitemap and routing. */
@@ -298,9 +326,12 @@ export type SearchRow = HandbookMeta & {
   bodyPlain: string;
 };
 
-export function searchRowsForRoles(userRoles: string[]): SearchRow[] {
+export function searchRowsForRoles(
+  userRoles: string[],
+  hiddenStatuses: PageStatus[] = [],
+): SearchRow[] {
   const rows: SearchRow[] = [];
-  for (const meta of listMetaForRoles(userRoles)) {
+  for (const meta of listMetaForRoles(userRoles, hiddenStatuses)) {
     const doc = getDocBySlug(meta.slug);
     if (!doc) continue;
     rows.push({

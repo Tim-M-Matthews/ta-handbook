@@ -330,7 +330,53 @@ a.handbook-page-nav__badge--link:focus-visible {
 }
 
 .home-bookmarks-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
   margin: 0 0 2rem;
+}
+
+.home-bookmarks-bar__status-select {
+  margin-left: auto;
+  min-width: 11rem;
+  max-width: 100%;
+  padding: 0.45rem 2rem 0.45rem 0.65rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--text);
+  background-color: var(--surface);
+  border: 1px solid var(--border-elevated);
+  border-radius: 8px;
+  box-shadow: var(--shadow-elevated);
+  cursor: pointer;
+}
+
+.home-bookmarks-bar__status-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.home-bookmarks-bar__status-meta {
+  margin: -1.25rem 0 1.5rem;
+}
+
+.home-bookmarks-bar__status-empty {
+  margin: -1.25rem 0 1.5rem;
+}
+
+html[data-home-status-filter] #home-cat-grid,
+html[data-home-status-filter] #home-cat-empty {
+  display: none !important;
+}
+
+#home-status-results {
+  margin-bottom: 1rem;
+}
+
+#home-status-pagination {
+  margin-bottom: 2rem;
 }
 
 @media (max-width: 640px) {
@@ -1257,6 +1303,152 @@ a.handbook-page-nav__badge--link:focus-visible {
   flex-shrink: 0;
 }
 
+/* Page editorial status (admins only) */
+.page-status-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-top: 0.45rem;
+}
+
+.cat__link-heading .page-status-icon {
+  margin-top: 0.4rem;
+}
+
+.page-status-icon__dot {
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.page-status-icon--todo {
+  color: #dc2626;
+}
+
+.page-status-icon--draft {
+  color: #ca8a04;
+}
+
+.page-status-icon--complete {
+  color: #16a34a;
+}
+
+/* Settings */
+.handbook-settings-intro {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  max-width: 40rem;
+  line-height: 1.5;
+}
+
+.handbook-settings__fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.handbook-settings__fieldset--spaced {
+  margin-top: 1.75rem;
+}
+
+.handbook-settings__hint--nested {
+  margin-top: 0.65rem;
+  margin-bottom: 0;
+}
+
+.handbook-settings__legend {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.handbook-settings__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.handbook-settings__item {
+  margin: 0;
+}
+
+.handbook-settings__label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-elevated);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-elevated);
+  cursor: pointer;
+}
+
+.handbook-settings__label:hover {
+  background: var(--fill-subtle);
+}
+
+.handbook-settings__checkbox {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.handbook-settings__label .page-status-icon {
+  margin-top: 0;
+}
+
+.handbook-settings__label-text {
+  font-weight: 500;
+}
+
+.handbook-settings__hint {
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  max-width: 40rem;
+  line-height: 1.45;
+}
+
+.handbook-settings #handbook-settings-reset {
+  margin-top: 0.25rem;
+}
+
+.handbook-settings__save-status {
+  margin: 0 0 1rem;
+}
+
+a.shell__user-menu__item {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.handbook-page-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.handbook-page-title .page-status-icon {
+  margin-top: 0.55em;
+}
+
+.handbook-page-title__text {
+  flex: 1;
+  min-width: 0;
+}
+
 .cat__link--bookmarked {
   border-color: color-mix(in srgb, var(--accent) 34%, var(--border-elevated));
   background: color-mix(in srgb, var(--accent) 18%, #ffffff);
@@ -1822,6 +2014,9 @@ a.cat__subtitle-link--bookmarked {
 }
 
 .search-hit__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
   margin: 0;
   flex: 1 1 12rem;
   min-width: min(12rem, 100%);
@@ -1830,6 +2025,10 @@ a.cat__subtitle-link--bookmarked {
   font-weight: 600;
   color: var(--text);
   line-height: 1.3;
+}
+
+.search-hit__title .page-status-icon {
+  margin-top: 0.35rem;
 }
 
 .search-hit__title-text {
@@ -1936,6 +2135,14 @@ a.cat__subtitle-link--bookmarked {
   font-size: 0.875rem;
   color: var(--link);
   text-decoration: none;
+}
+
+button.search-pagination__link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 .search-pagination__link:hover:not(.is-disabled) {

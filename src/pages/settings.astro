@@ -1,0 +1,92 @@
+---
+import HandbookLayout from "../layouts/HandbookLayout.astro";
+import { PAGE_STATUSES, pageStatusLabel } from "../lib/page-status";
+import { parseViewPreferencesCookie } from "../lib/handbook-view-preferences";
+import { userIsAdmin } from "../lib/roles";
+
+const session = Astro.locals.session!;
+const roles = session.user?.roles ?? [];
+if (!userIsAdmin(roles)) {
+  return new Response(null, { status: 404 });
+}
+
+const email = session.user?.email ?? "";
+const cookieRaw = Astro.cookies.get("handbook_view_prefs")?.value;
+const initialPrefs = parseViewPreferencesCookie(cookieRaw, email);
+
+function isInitiallyVisible(status: (typeof PAGE_STATUSES)[number]): boolean {
+  return !initialPrefs.hiddenStatuses.includes(status);
+}
+---
+
+<HandbookLayout title="Settings — Handbook" returnToParent={{ href: "/", label: "homepage" }}>
+  <p class="handbook-page-nav">
+    <a href="/">← Handbook home</a>
+  </p>
+  <h1 class="h1">Settings</h1>
+  <p class="handbook-settings-intro">
+    Control which pages you see and whether status labels appear in the handbook.
+    Changes apply to your account on this browser. Admins only.
+  </p>
+
+  <p class="search-meta handbook-settings__save-status" id="handbook-settings-status" hidden role="status"></p>
+
+  <form id="handbook-settings-form" class="handbook-settings" data-user-email={email}>
+    <fieldset class="handbook-settings__fieldset">
+      <legend class="handbook-settings__legend">Status indicators</legend>
+      <ul class="handbook-settings__list" role="list">
+        <li class="handbook-settings__item">
+          <label class="handbook-settings__label" for="handbook-show-status-ui">
+            <input
+              type="checkbox"
+              class="handbook-settings__checkbox"
+              id="handbook-show-status-ui"
+              checked={initialPrefs.showStatusUi}
+            />
+            <span class="handbook-settings__label-text">
+              Show status indicators (homepage filter and colored dots on titles)
+            </span>
+          </label>
+        </li>
+      </ul>
+      <p class="handbook-settings__hint handbook-settings__hint--nested">
+        Turn off to hide the homepage status dropdown and colored dots. Your page visibility choices below stay in effect.
+      </p>
+    </fieldset>
+
+    <fieldset class="handbook-settings__fieldset handbook-settings__fieldset--spaced">
+      <legend class="handbook-settings__legend">Page visibility</legend>
+      <ul class="handbook-settings__list" role="list">
+        {
+          PAGE_STATUSES.map((status) => (
+            <li class="handbook-settings__item">
+              <label class="handbook-settings__label">
+                <input
+                  type="checkbox"
+                  class="handbook-settings__checkbox"
+                  data-status={status}
+                  checked={isInitiallyVisible(status)}
+                />
+                <span class:list={["page-status-icon", `page-status-icon--${status}`]}>
+                  <span class="page-status-icon__dot" aria-hidden="true"></span>
+                </span>
+                <span class="handbook-settings__label-text">{pageStatusLabel(status)}</span>
+              </label>
+            </li>
+          ))
+        }
+      </ul>
+    </fieldset>
+    <p class="handbook-settings__hint">
+      Uncheck a status to hide those pages from your view. To-do and draft remain hidden from non-admin users.
+    </p>
+    <button type="button" class="btn btn--small" id="handbook-settings-reset">
+      Show all page statuses
+    </button>
+  </form>
+
+  <script>
+    import { mountHandbookSettingsPage } from "../lib/handbook-settings-client";
+    mountHandbookSettingsPage();
+  </script>
+</HandbookLayout>

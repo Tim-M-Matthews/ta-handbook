@@ -11,9 +11,13 @@ import {
   listMetaForCategory,
   listMetaForRoles,
   listMetaForSubcategory,
+  searchRowsForRoles,
 } from "../lib/content";
-import { userCanViewPage } from "../lib/roles";
+import { viewPreferencesFromRequest } from "../lib/handbook-request";
+import { PAGE_STATUS_FILTER_OPTIONS } from "../lib/page-status";
+import { userCanViewPage, userIsAdmin } from "../lib/roles";
 import { subcategoryTitleForPair } from "../lib/subcategories";
+import { utf8JsonToBase64 } from "../lib/search-index-b64";
 
 function utf8ToBase64(str: string): string {
   const bytes = new TextEncoder().encode(str);
@@ -24,9 +28,35 @@ function utf8ToBase64(str: string): string {
 
 const session = Astro.locals.session!;
 const roles = session.user?.roles ?? [];
-const sections = homeSectionsForRoles(roles);
+const viewPrefs = viewPreferencesFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  roles,
+);
+const hiddenStatuses = viewPrefs.hiddenStatuses;
+const isAdmin = userIsAdmin(roles);
+const showStatusUi = isAdmin && viewPrefs.showStatusUi;
+const sections = homeSectionsForRoles(roles, hiddenStatuses);
 const bypass = isAuthBypassed();
 const localPersona = isLocalDevPersona();
+
+const adminStatusPagesPayload = showStatusUi
+  ? utf8JsonToBase64(
+      JSON.stringify(
+        searchRowsForRoles(roles, hiddenStatuses).map((r) => ({
+          slug: r.slug,
+          title: r.title,
+          categoryLabel: r.categoryLabel,
+          subcategoryLabel: r.subcategoryLabel,
+          categoryId: r.categoryId,
+          description: r.description,
+          bodyPlain: r.bodyPlain,
+          status: r.status,
+          ...categoryChromeFieldsForRow(r.categoryId),
+        })),
+      ),
+    )
+  : "";
 
 type BookmarkCrumbRow = {
   categoryLabel: string;
@@ -37,7 +67,7 @@ type BookmarkCrumbRow = {
 };
 const bookmarkCrumbLookup: Record<string, BookmarkCrumbRow> = {};
 
-for (const m of listMetaForRoles(roles)) {
+for (const m of listMetaForRoles(roles, hiddenStatuses)) {
   const row: BookmarkCrumbRow = {
     categoryLabel: m.categoryLabel,
     categoryId: m.categoryId,
@@ -48,7 +78,8 @@ for (const m of listMetaForRoles(roles)) {
 }
 
 for (const { categoryId, subcategoryId } of getAllSubcategoryIndexPairs()) {
-  if (listMetaForSubcategory(roles, categoryId, subcategoryId).length === 0) continue;
+  if (listMetaForSubcategory(roles, categoryId, subcategoryId, hiddenStatuses).length === 0)
+    continue;
   const cat = categoryDefForId(categoryId);
   if (!userCanViewPage(roles, cat.roles)) continue;
   bookmarkCrumbLookup[`c/${categoryId}/${subcategoryId}`] = {
@@ -63,7 +94,7 @@ for (const categoryId of getAllCategoryIndexIds()) {
   if (!categoryExistsInSite(categoryId)) continue;
   const cat = categoryDefForId(categoryId);
   if (!userCanViewPage(roles, cat.roles)) continue;
-  if (listMetaForCategory(roles, categoryId).length === 0) continue;
+  if (listMetaForCategory(roles, categoryId, hiddenStatuses).length === 0) continue;
   bookmarkCrumbLookup[`c/${categoryId}`] = {
     categoryLabel: cat.title,
     categoryId,
@@ -75,11 +106,52 @@ const bookmarkCrumbsB64 = utf8ToBase64(JSON.stringify(bookmarkCrumbLookup));
 ---
 
 <HandbookLayout title="Triangle ACT Handbook">
-  <div class="home-bookmarks-bar">
+  <div class="home-bookmarks-bar" id="home-bookmarks-bar">
     <button type="button" class="btn btn--small" id="handbook-bookmarks-open">
       Open bookmarks
     </button>
+    {
+      showStatusUi ? (
+        <select
+          class="home-bookmarks-bar__status-select"
+          id="home-status-filter"
+          name="status"
+          aria-label="Filter by status"
+        >
+          {PAGE_STATUS_FILTER_OPTIONS.map((opt) => (
+            <option value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      ) : null
+    }
   </div>
+  {
+    showStatusUi ? (
+      <>
+        <p class="search-meta home-bookmarks-bar__status-meta" id="home-status-filter-meta" hidden></p>
+        <p class="empty home-bookmarks-bar__status-empty" id="home-status-filter-empty" hidden>
+          No pages with this status.
+        </p>
+        <textarea
+          id="home-status-pages-b64"
+          hidden
+          readonly
+          aria-hidden="true"
+          tabindex="-1"
+          class="sr-only"
+        >
+          {adminStatusPagesPayload}
+        </textarea>
+        <ul class="search-list" id="home-status-results" role="list" hidden></ul>
+        <nav
+          id="home-status-pagination"
+          class="search-pagination"
+          aria-label="Status filter results pages"
+          hidden
+        ></nav>
+      </>
+    ) : null
+  }
   <div
     id="handbook-bookmarks-modal"
     class="handbook-bookmarks-modal"
@@ -192,12 +264,26 @@ const bookmarkCrumbsB64 = utf8ToBase64(JSON.stringify(bookmarkCrumbLookup));
     ) : null
   }
   {
+    showStatusUi ? (
+      <script is:inline>
+        (function () {
+          try {
+            var s = localStorage.getItem("triangle-act-handbook:home-status-filter");
+            if (s && s !== "all") {
+              document.documentElement.setAttribute("data-home-status-filter", s);
+            }
+          } catch (_) {}
+        })();
+      </script>
+    ) : null
+  }
+  {
     sections.length === 0 ? (
-      <p class="empty">
+      <p class="empty" id="home-cat-empty">
         No pages available yet. Add markdown under <code>content/pages</code>.
       </p>
     ) : (
-      <ul class="home-cat-grid" role="list">
+      <ul class="home-cat-grid" id="home-cat-grid" role="list">
         {sections.map((sec) => {
           const catChromeBrand = categoryChromeSwatch(sec.categoryId);
           return (
@@ -243,6 +329,14 @@ const bookmarkCrumbsB64 = utf8ToBase64(JSON.stringify(bookmarkCrumbLookup));
             });
           });
         })();
+      </script>
+    ) : null
+  }
+  {
+    showStatusUi ? (
+      <script>
+        import { mountHandbookHomeStatusFilter } from "../lib/handbook-home-status-filter-client";
+        mountHandbookHomeStatusFilter();
       </script>
     ) : null
   }

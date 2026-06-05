@@ -102,6 +102,7 @@ Frontmatter and roles behave the same as when editing files in GitHub.
 | ------------ | ------- |
 | `title`      | Page title (defaults to filename if omitted) |
 | `category`   | Legacy / optional — placement uses the **folder path** under `content/pages/`. If present, may help **`resolveCategoryId`** match an id or title. Prefer relying on folder layout and **`_category-meta.md`** for section metadata. |
+| `status`     | Editorial state: `todo` (red), `draft` (yellow), or `complete` (green). **Omit** `status` on published pages (treated as `complete`). **`todo` and `draft` are visible only to admins** (staff never see them). In **Settings**, admins can hide page statuses from their view and optionally hide status indicators (homepage filter and colored dots) while keeping those visibility rules. |
 | `roles`      | Optional extra gate for this page only (string or array); omit or empty = any user who already passes the **category** roles. `admin` always sees everything. |
 | `order`      | Sort order within the category (number) |
 

@@ -1,13 +1,20 @@
 import type { APIRoute } from "astro";
 import { categoryChromeFieldsForRow } from "../../lib/category-chrome";
 import { searchRowsForRoles } from "../../lib/content";
+import { hiddenStatusesFromRequest } from "../../lib/handbook-request";
 
 export const prerender = false;
 
 /** JSON rows for `/search` live filter (same shape as server-rendered list). */
-export const GET: APIRoute = ({ locals }) => {
+export const GET: APIRoute = ({ locals, cookies }) => {
   const roles = locals.session?.user?.roles ?? [];
-  const rows = searchRowsForRoles(roles).map((r) => ({
+  const roles = locals.session?.user?.roles ?? [];
+  const hiddenStatuses = hiddenStatusesFromRequest(
+    cookies,
+    locals.session?.user?.email,
+    roles,
+  );
+  const rows = searchRowsForRoles(roles, hiddenStatuses).map((r) => ({
     slug: r.slug,
     title: r.title,
     categoryLabel: r.categoryLabel,

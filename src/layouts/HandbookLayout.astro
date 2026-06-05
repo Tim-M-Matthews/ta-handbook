@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { authBypassLabel, isAuthBypassed } from "../lib/dev-auth";
 import { firstNameFromDisplay } from "../lib/display-name";
 import { categoryChromeOnBrand, categoryChromeSwatch } from "../lib/category-chrome";
+import { userIsAdmin } from "../lib/roles";
 
 interface Props {
   title?: string;
@@ -40,6 +41,7 @@ const accountMenuLabel = `Account menu (${displayName})`;
 const accountMenuTitle = bypass
   ? authBypassLabel()
   : [email, roles.length ? roles.join(", ") : null].filter(Boolean).join(" — ");
+const showSettingsLink = userIsAdmin(roles);
 ---
 
 <!doctype html>
@@ -150,6 +152,13 @@ const accountMenuTitle = bypass
               role="menu"
               aria-labelledby="user-menu-toggle"
             >
+              {
+                showSettingsLink ? (
+                  <a role="menuitem" class="shell__user-menu__item" href="/settings">
+                    Settings
+                  </a>
+                ) : null
+              }
               {
                 bypass ? (
                   <p class="shell__user-menu__hint" role="note">

@@ -1,4 +1,10 @@
+import {
+  createSearchHitListItem,
+  type HandbookSearchHitRow,
+} from "./handbook-search-hit-dom";
+import { blurbForHandbookCard } from "./handbook-card-blurb";
 import { highlightQueryTermsInPlainText } from "./search-query-highlight";
+import type { PageStatus } from "./page-status";
 import { searchSnippetForHit } from "./search-snippet";
 
 const PAGE_SIZE = 10;
@@ -13,6 +19,7 @@ type SearchHitRow = {
   bodyPlain: string;
   chromeBrand?: string;
   chromeOnBrand?: string;
+  status?: PageStatus;
 };
 
 function b64ToUtf8(b64: string): string {
@@ -134,55 +141,18 @@ function renderHits(hitsSlice: SearchHitRow[], qt: string, allRows: SearchHitRow
   list.replaceChildren();
   for (let i = 0; i < hitsSlice.length; i++) {
     const hit = hitsSlice[i];
-    const li = document.createElement("li");
-    li.className = "search-hit";
-    const card = document.createElement("a");
-    card.className = "search-hit__card";
-    card.href = `/p/${hit.slug}`;
-    const head = document.createElement("div");
-    head.className = "search-hit__head";
-    const h2 = document.createElement("h2");
-    h2.className = "search-hit__title";
-    const titleSpan = document.createElement("span");
-    titleSpan.className = "search-hit__title-text";
-    titleSpan.innerHTML = highlightQueryTermsInPlainText(hit.title, qt);
-    h2.appendChild(titleSpan);
-    head.appendChild(h2);
-    const badges = document.createElement("div");
-    badges.className = "search-hit__badges";
-    if (hit.chromeBrand) {
-      badges.classList.add("search-hit__badges--cat-chrome");
-      badges.style.setProperty("--cat-chrome-brand", hit.chromeBrand);
-      if (hit.chromeOnBrand) badges.style.setProperty("--cat-chrome-on-brand", hit.chromeOnBrand);
-    }
-    badges.setAttribute("role", "group");
-    badges.setAttribute("aria-label", "Category");
-    const catBadge = document.createElement("span");
-    catBadge.className = "search-hit__badge search-hit__badge--category";
-    catBadge.textContent = hit.categoryLabel;
-    badges.appendChild(catBadge);
-    if (hit.subcategoryLabel) {
-      const arrow = document.createElement("span");
-      arrow.className = "search-hit__badge-arrow";
-      arrow.setAttribute("aria-hidden", "true");
-      arrow.textContent = "/";
-      badges.appendChild(arrow);
-      const subBadge = document.createElement("span");
-      subBadge.className = "search-hit__badge search-hit__badge--subcategory";
-      subBadge.textContent = hit.subcategoryLabel;
-      badges.appendChild(subBadge);
-    }
-    head.appendChild(badges);
-    card.appendChild(head);
-    const snippet = searchSnippetForHit(hit, qt);
-    if (snippet) {
-      const sn = document.createElement("p");
-      sn.className = "search-hit__snippet";
-      sn.innerHTML = highlightQueryTermsInPlainText(snippet, qt);
-      card.appendChild(sn);
-    }
-    li.appendChild(card);
-    list.appendChild(li);
+    const cardHit: HandbookSearchHitRow = {
+      slug: hit.slug,
+      title: hit.title,
+      categoryLabel: hit.categoryLabel,
+      subcategoryLabel: hit.subcategoryLabel,
+      categoryId: hit.categoryId,
+      status: hit.status,
+      snippet: searchSnippetForHit(hit, qt) || blurbForHandbookCard(hit),
+      chromeBrand: hit.chromeBrand,
+      chromeOnBrand: hit.chromeOnBrand,
+    };
+    list.appendChild(createSearchHitListItem(cardHit, { highlightQuery: qt }));
   }
   if (emptyEl) {
     const allForEmpty = computeHits(qt, allRows);

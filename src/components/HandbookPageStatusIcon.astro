@@ -1,0 +1,27 @@
+---
+import {
+  pageStatusLabel,
+  type PageStatus,
+} from "../lib/page-status";
+import { userIsAdmin } from "../lib/roles";
+
+interface Props {
+  status: PageStatus;
+  userRoles: string[];
+  showStatusUi?: boolean;
+}
+
+const { status, userRoles, showStatusUi = true } = Astro.props;
+
+if (!userIsAdmin(userRoles) || !showStatusUi) return null;
+
+const label = pageStatusLabel(status);
+---
+
+<span
+  class:list={["page-status-icon", `page-status-icon--${status}`]}
+  title={label}
+  aria-label={`Status: ${label}`}
+>
+  <span class="page-status-icon__dot" aria-hidden="true"></span>
+</span>

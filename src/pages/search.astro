@@ -1,9 +1,12 @@
 ---
+import HandbookSearchHitCard from "../components/HandbookSearchHitCard.astro";
 import HandbookLayout from "../layouts/HandbookLayout.astro";
+import { blurbForHandbookCard } from "../lib/handbook-card-blurb";
+import { userIsAdmin } from "../lib/roles";
 import { categoryChromeFieldsForRow } from "../lib/category-chrome";
 import { filterHandbookSearchRows } from "../lib/handbook-search-filter";
 import { searchRowsForRoles } from "../lib/content";
-import { highlightQueryTermsInPlainText } from "../lib/search-query-highlight";
+import { viewPreferencesFromRequest } from "../lib/handbook-request";
 import { searchSnippetForHit } from "../lib/search-snippet";
 import { utf8JsonToBase64 } from "../lib/search-index-b64";
 
@@ -11,8 +14,11 @@ const PAGE_SIZE = 10;
 
 const session = Astro.locals.session!;
 const roles = session.user?.roles ?? [];
+const viewPrefs = viewPreferencesFromRequest(Astro.cookies, session.user?.email, roles);
+const hiddenStatuses = viewPrefs.hiddenStatuses;
+const showStatusIcons = userIsAdmin(roles) && viewPrefs.showStatusUi;
 const q = Astro.url.searchParams.get("q")?.trim() ?? "";
-const rows = searchRowsForRoles(roles);
+const rows = searchRowsForRoles(roles, hiddenStatuses);
 const initialHits = filterHandbookSearchRows(rows, q);
 
 const totalHits = initialHits.length;
@@ -58,6 +64,7 @@ const clientSearchIndex = rows.map((r) => ({
   categoryId: r.categoryId,
   description: r.description,
   bodyPlain: r.bodyPlain,
+  status: showStatusIcons ? r.status : undefined,
   ...categoryChromeFieldsForRow(r.categoryId),
 }));
 const searchPayloadB64 = utf8JsonToBase64(JSON.stringify(clientSearchIndex));
@@ -95,49 +102,20 @@ const searchPayloadHtml =
   <ul class="search-list" id="search-results" role="list">
     {
       pagedHits.map((hit) => {
-        const snip = searchSnippetForHit(hit, q);
-        const chrome = categoryChromeFieldsForRow(hit.categoryId);
+        const snip = searchSnippetForHit(hit, q) || blurbForHandbookCard(hit);
         return (
-        <li class="search-hit">
-          <a class="search-hit__card" href={`/p/${hit.slug}`}>
-            <div class="search-hit__head">
-              <h2 class="search-hit__title">
-                <span
-                  class="search-hit__title-text"
-                  set:html={highlightQueryTermsInPlainText(hit.title, q)}
-                />
-              </h2>
-              <div
-                class:list={["search-hit__badges", chrome.chromeBrand && "search-hit__badges--cat-chrome"]}
-                role="group"
-                aria-label="Category"
-                style={
-                  chrome.chromeBrand
-                    ? {
-                        "--cat-chrome-brand": chrome.chromeBrand,
-                        ...(chrome.chromeOnBrand
-                          ? { "--cat-chrome-on-brand": chrome.chromeOnBrand }
-                          : {}),
-                      }
-                    : undefined
-                }
-              >
-                <span class="search-hit__badge search-hit__badge--category">{hit.categoryLabel}</span>
-                {hit.subcategoryLabel ? (
-                  <>
-                    <span class="search-hit__badge-arrow" aria-hidden="true">/</span>
-                    <span class="search-hit__badge search-hit__badge--subcategory">
-                      {hit.subcategoryLabel}
-                    </span>
-                  </>
-                ) : null}
-              </div>
-            </div>
-            {snip ? (
-              <p class="search-hit__snippet" set:html={highlightQueryTermsInPlainText(snip, q)} />
-            ) : null}
-          </a>
-        </li>
+          <HandbookSearchHitCard
+            slug={hit.slug}
+            title={hit.title}
+            categoryLabel={hit.categoryLabel}
+            subcategoryLabel={hit.subcategoryLabel}
+            categoryId={hit.categoryId}
+            status={hit.status}
+            userRoles={roles}
+            showStatusUi={showStatusIcons}
+            snippet={snip}
+            highlightQuery={q}
+          />
         );
       })
     }

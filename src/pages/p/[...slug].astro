@@ -1,10 +1,10 @@
 ---
 import HandbookLayout from "../../layouts/HandbookLayout.astro";
 import HandbookBookmarkBar from "../../components/HandbookBookmarkBar.astro";
-import { categoryDefForId } from "../../lib/categories";
 import { renderHandbookBody } from "../../lib/body-render";
-import { getDocBySlug } from "../../lib/content";
-import { userCanViewPage } from "../../lib/roles";
+import HandbookPageStatusIcon from "../../components/HandbookPageStatusIcon.astro";
+import { getDocBySlug, handbookPageVisibleToUser } from "../../lib/content";
+import { hiddenStatusesFromRequest, showStatusUiFromRequest } from "../../lib/handbook-request";
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -13,14 +13,10 @@ if (!slug) {
 
 const session = Astro.locals.session!;
 const userRoles = session.user?.roles ?? [];
+const hiddenStatuses = hiddenStatusesFromRequest(Astro.cookies, session.user?.email, userRoles);
+const showStatusUi = showStatusUiFromRequest(Astro.cookies, session.user?.email, userRoles);
 const doc = getDocBySlug(slug);
-const cat = doc ? categoryDefForId(doc.categoryId) : null;
-if (
-  !doc ||
-  !cat ||
-  !userCanViewPage(userRoles, cat.roles) ||
-  !userCanViewPage(userRoles, doc.roles)
-) {
+if (!doc || !handbookPageVisibleToUser(userRoles, doc, hiddenStatuses)) {
   return new Response(null, { status: 404 });
 }
 
@@ -68,7 +64,10 @@ const html = renderHandbookBody(doc.body);
     </span>
   </p>
   <article class="prose">
-    <h1>{doc.title}</h1>
+    <h1 class="handbook-page-title">
+      <HandbookPageStatusIcon status={doc.status} userRoles={userRoles} showStatusUi={showStatusUi} />
+      <span class="handbook-page-title__text">{doc.title}</span>
+    </h1>
     {doc.description ? <p class="handbook-page-desc">{doc.description}</p> : null}
     <HandbookBookmarkBar slug={doc.slug} title={doc.title} />
     <div set:html={html} />

@@ -1,4 +1,5 @@
 ---
+import HandbookPageStatusIcon from "../../../components/HandbookPageStatusIcon.astro";
 import HandbookLayout from "../../../layouts/HandbookLayout.astro";
 import HandbookBookmarkBar from "../../../components/HandbookBookmarkBar.astro";
 import { categoryDefForId, resolveCategoryId } from "../../../lib/categories";
@@ -10,6 +11,7 @@ import {
   subcategoryDefForPair,
   subcategoryTitleForPair,
 } from "../../../lib/subcategories";
+import { hiddenStatusesFromRequest, showStatusUiFromRequest } from "../../../lib/handbook-request";
 import { userCanViewPage } from "../../../lib/roles";
 
 const rawCat = Astro.params.category;
@@ -35,12 +37,14 @@ if (!subcategoryExistsInSite(categoryId, subcategoryId)) {
 
 const session = Astro.locals.session!;
 const userRoles = session.user?.roles ?? [];
+const hiddenStatuses = hiddenStatusesFromRequest(Astro.cookies, session.user?.email, userRoles);
+const showStatusUi = showStatusUiFromRequest(Astro.cookies, session.user?.email, userRoles);
 const cat = categoryDefForId(categoryId);
 if (!userCanViewPage(userRoles, cat.roles)) {
   return new Response(null, { status: 404 });
 }
 
-const pages = listMetaForSubcategory(userRoles, categoryId, subcategoryId);
+const pages = listMetaForSubcategory(userRoles, categoryId, subcategoryId, hiddenStatuses);
 const subDef = subcategoryDefForPair(categoryId, subcategoryId);
 const subLabel = subcategoryTitleForPair(categoryId, subcategoryId);
 const subDescription = subDef?.description ?? null;
@@ -83,6 +87,7 @@ const bookmarkTitle = `${subLabel} — ${cat.title}`;
           <li class="cat__item">
             <a class="cat__link" href={`/p/${p.slug}`} data-handbook-page-slug={p.slug}>
               <span class="cat__link-heading">
+                <HandbookPageStatusIcon status={p.status} userRoles={userRoles} showStatusUi={showStatusUi} />
                 <span class="cat__link-title">{p.title}</span>
               </span>
               {p.description ? <span class="cat__link-desc">{p.description}</span> : null}

@@ -1,7 +1,7 @@
 ---
-title: "Markdown kitchen sink"
-order: 10
-description: "Minimal samples of supported handbook blocks."
+title: "Markdown Kitchen Sink"
+order: 50
+status: complete
 ---
 
 <p id="text">Plain paragraph with no formatting inside.</p>

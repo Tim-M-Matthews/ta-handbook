@@ -1,4 +1,5 @@
 ---
+import HandbookPageStatusIcon from "../../components/HandbookPageStatusIcon.astro";
 import HandbookLayout from "../../layouts/HandbookLayout.astro";
 import { categoryDefForId, resolveCategoryId } from "../../lib/categories";
 import {
@@ -6,6 +7,7 @@ import {
   groupPagesBySubcategory,
   listMetaForCategory,
 } from "../../lib/content";
+import { hiddenStatusesFromRequest, showStatusUiFromRequest } from "../../lib/handbook-request";
 import { userCanViewPage } from "../../lib/roles";
 
 const raw = Astro.params.category;
@@ -25,12 +27,14 @@ if (!categoryExistsInSite(categoryId)) {
 
 const session = Astro.locals.session!;
 const userRoles = session.user?.roles ?? [];
+const hiddenStatuses = hiddenStatusesFromRequest(Astro.cookies, session.user?.email, userRoles);
+const showStatusUi = showStatusUiFromRequest(Astro.cookies, session.user?.email, userRoles);
 const cat = categoryDefForId(categoryId);
 if (!userCanViewPage(userRoles, cat.roles)) {
   return new Response(null, { status: 404 });
 }
 
-const pages = listMetaForCategory(userRoles, categoryId);
+const pages = listMetaForCategory(userRoles, categoryId, hiddenStatuses);
 const subsections = groupPagesBySubcategory(categoryId, pages);
 ---
 
@@ -67,6 +71,7 @@ const subsections = groupPagesBySubcategory(categoryId, pages);
               <li class="cat__item">
                 <a class="cat__link" href={`/p/${p.slug}`} data-handbook-page-slug={p.slug}>
                   <span class="cat__link-heading">
+                    <HandbookPageStatusIcon status={p.status} userRoles={userRoles} showStatusUi={showStatusUi} />
                     <span class="cat__link-title">{p.title}</span>
                   </span>
                   {p.description ? <span class="cat__link-desc">{p.description}</span> : null}

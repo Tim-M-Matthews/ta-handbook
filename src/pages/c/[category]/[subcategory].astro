@@ -11,7 +11,8 @@ import {
   subcategoryDefForPair,
   subcategoryTitleForPair,
 } from "../../../lib/subcategories";
-import { hiddenStatusesFromRequest, showStatusUiFromRequest } from "../../../lib/handbook-request";
+import { handbookViewOptionsFromRequest, showStatusUiFromRequest } from "../../../lib/handbook-request";
+import { rolesForHandbookView } from "../../../lib/handbook-view-options";
 import { userCanViewPage } from "../../../lib/roles";
 
 const rawCat = Astro.params.category;
@@ -37,14 +38,23 @@ if (!subcategoryExistsInSite(categoryId, subcategoryId)) {
 
 const session = Astro.locals.session!;
 const userRoles = session.user?.roles ?? [];
-const hiddenStatuses = hiddenStatusesFromRequest(Astro.cookies, session.user?.email, userRoles);
-const showStatusUi = showStatusUiFromRequest(Astro.cookies, session.user?.email, userRoles);
+const viewOptions = handbookViewOptionsFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  userRoles,
+);
+const showStatusUi = showStatusUiFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  userRoles,
+);
 const cat = categoryDefForId(categoryId);
-if (!userCanViewPage(userRoles, cat.roles)) {
+const effectiveRoles = rolesForHandbookView(userRoles, viewOptions);
+if (!userCanViewPage(effectiveRoles, cat.roles)) {
   return new Response(null, { status: 404 });
 }
 
-const pages = listMetaForSubcategory(userRoles, categoryId, subcategoryId, hiddenStatuses);
+const pages = listMetaForSubcategory(userRoles, categoryId, subcategoryId, viewOptions);
 const subDef = subcategoryDefForPair(categoryId, subcategoryId);
 const subLabel = subcategoryTitleForPair(categoryId, subcategoryId);
 const subDescription = subDef?.description ?? null;

@@ -1,6 +1,6 @@
 ---
 title: "Cancellation and No-Show Policy"
-order: 40
+order: 30
 status: todo
 ---
 

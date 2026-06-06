@@ -15,6 +15,10 @@ function isPageStatus(value: unknown): value is PageStatus {
   return typeof value === "string" && (PAGE_STATUSES as string[]).includes(value);
 }
 
+function isViewMode(value: unknown): value is HandbookViewPreferences["viewMode"] {
+  return value === "admin" || value === "staff";
+}
+
 function normalizePrefs(body: unknown): HandbookViewPreferences {
   if (!body || typeof body !== "object") return defaultViewPreferences();
   const o = body as Partial<HandbookViewPreferences>;
@@ -24,6 +28,7 @@ function normalizePrefs(body: unknown): HandbookViewPreferences {
   return {
     hiddenStatuses: [...new Set(hiddenStatuses)],
     showStatusUi: o.showStatusUi !== false,
+    viewMode: isViewMode(o.viewMode) ? o.viewMode : "admin",
   };
 }
 
@@ -55,7 +60,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
   }
 
   const prefs = normalizePrefs(body);
-  const payload = { email, hiddenStatuses: prefs.hiddenStatuses, showStatusUi: prefs.showStatusUi };
+  const payload = {
+    email,
+    hiddenStatuses: prefs.hiddenStatuses,
+    showStatusUi: prefs.showStatusUi,
+    viewMode: prefs.viewMode,
+  };
 
   cookies.set(HANDBOOK_VIEW_PREFS_COOKIE, JSON.stringify(payload), {
     path: "/",

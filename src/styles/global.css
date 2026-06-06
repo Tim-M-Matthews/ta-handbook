@@ -1404,6 +1404,17 @@ html[data-home-status-filter] #home-cat-empty {
   accent-color: var(--accent);
 }
 
+.handbook-settings__radio {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.handbook-settings__label-text strong {
+  font-weight: 600;
+}
+
 .handbook-settings__label .page-status-icon {
   margin-top: 0;
 }
@@ -1426,6 +1437,26 @@ html[data-home-status-filter] #home-cat-empty {
 
 .handbook-settings__save-status {
   margin: 0 0 1rem;
+}
+
+.staff-preview-banner {
+  margin: 0;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--link) 12%, var(--surface));
+}
+
+.staff-preview-banner__text {
+  margin: 0 auto;
+  max-width: var(--content-max, 52rem);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.staff-preview-banner__text a {
+  margin-left: 0.35rem;
+  white-space: nowrap;
 }
 
 a.shell__user-menu__item {

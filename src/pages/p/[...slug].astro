@@ -4,7 +4,7 @@ import HandbookBookmarkBar from "../../components/HandbookBookmarkBar.astro";
 import { renderHandbookBody } from "../../lib/body-render";
 import HandbookPageStatusIcon from "../../components/HandbookPageStatusIcon.astro";
 import { getDocBySlug, handbookPageVisibleToUser } from "../../lib/content";
-import { hiddenStatusesFromRequest, showStatusUiFromRequest } from "../../lib/handbook-request";
+import { handbookViewOptionsFromRequest, showStatusUiFromRequest } from "../../lib/handbook-request";
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -13,10 +13,18 @@ if (!slug) {
 
 const session = Astro.locals.session!;
 const userRoles = session.user?.roles ?? [];
-const hiddenStatuses = hiddenStatusesFromRequest(Astro.cookies, session.user?.email, userRoles);
-const showStatusUi = showStatusUiFromRequest(Astro.cookies, session.user?.email, userRoles);
+const viewOptions = handbookViewOptionsFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  userRoles,
+);
+const showStatusUi = showStatusUiFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  userRoles,
+);
 const doc = getDocBySlug(slug);
-if (!doc || !handbookPageVisibleToUser(userRoles, doc, hiddenStatuses)) {
+if (!doc || !handbookPageVisibleToUser(userRoles, doc, viewOptions)) {
   return new Response(null, { status: 404 });
 }
 

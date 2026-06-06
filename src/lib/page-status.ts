@@ -48,7 +48,10 @@ export function userCanViewPageByStatus(
   userRoles: string[],
   status: PageStatus,
   hiddenStatuses?: PageStatus[],
+  previewAsStaff = false,
 ): boolean {
+  // Admin staff-view preview: role gates only; ignore publish status and hidden-status prefs.
+  if (previewAsStaff && userIsAdmin(userRoles)) return true;
   if (!userWantsToSeeStatus(status, hiddenStatuses)) return false;
   if (userIsAdmin(userRoles)) return true;
   return !ADMIN_ONLY_STATUSES.has(status);

@@ -2,11 +2,10 @@
 import HandbookSearchHitCard from "../components/HandbookSearchHitCard.astro";
 import HandbookLayout from "../layouts/HandbookLayout.astro";
 import { blurbForHandbookCard } from "../lib/handbook-card-blurb";
-import { userIsAdmin } from "../lib/roles";
 import { categoryChromeFieldsForRow } from "../lib/category-chrome";
 import { filterHandbookSearchRows } from "../lib/handbook-search-filter";
 import { searchRowsForRoles } from "../lib/content";
-import { viewPreferencesFromRequest } from "../lib/handbook-request";
+import { handbookViewOptionsFromRequest, showStatusUiFromRequest } from "../lib/handbook-request";
 import { searchSnippetForHit } from "../lib/search-snippet";
 import { utf8JsonToBase64 } from "../lib/search-index-b64";
 
@@ -14,11 +13,18 @@ const PAGE_SIZE = 10;
 
 const session = Astro.locals.session!;
 const roles = session.user?.roles ?? [];
-const viewPrefs = viewPreferencesFromRequest(Astro.cookies, session.user?.email, roles);
-const hiddenStatuses = viewPrefs.hiddenStatuses;
-const showStatusIcons = userIsAdmin(roles) && viewPrefs.showStatusUi;
+const viewOptions = handbookViewOptionsFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  roles,
+);
+const showStatusIcons = showStatusUiFromRequest(
+  Astro.cookies,
+  session.user?.email ?? undefined,
+  roles,
+);
 const q = Astro.url.searchParams.get("q")?.trim() ?? "";
-const rows = searchRowsForRoles(roles, hiddenStatuses);
+const rows = searchRowsForRoles(roles, viewOptions);
 const initialHits = filterHandbookSearchRows(rows, q);
 
 const totalHits = initialHits.length;

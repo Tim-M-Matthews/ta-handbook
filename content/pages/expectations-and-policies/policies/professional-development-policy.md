@@ -1,6 +1,6 @@
 ---
 title: "Professional Development Policy"
-order: 70
+order: 40
 status: todo
 ---
 

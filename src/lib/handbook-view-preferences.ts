@@ -7,12 +7,15 @@ export type HandbookViewPreferences = {
   hiddenStatuses: PageStatus[];
   /** Homepage status filter and colored dots on page titles (admins only). */
   showStatusUi: boolean;
+  /** Admin preview: `staff` uses staff role gates; publish status is not filtered. */
+  viewMode: "admin" | "staff";
 };
 
 type StoredViewPrefs = {
   email: string;
   hiddenStatuses: PageStatus[];
   showStatusUi?: boolean;
+  viewMode?: "admin" | "staff";
 };
 
 function isPageStatus(value: unknown): value is PageStatus {
@@ -20,7 +23,11 @@ function isPageStatus(value: unknown): value is PageStatus {
 }
 
 export function defaultViewPreferences(): HandbookViewPreferences {
-  return { hiddenStatuses: [], showStatusUi: true };
+  return { hiddenStatuses: [], showStatusUi: true, viewMode: "admin" };
+}
+
+function isViewMode(value: unknown): value is HandbookViewPreferences["viewMode"] {
+  return value === "admin" || value === "staff";
 }
 
 function normalizePrefs(parsed: Partial<HandbookViewPreferences>): HandbookViewPreferences {
@@ -30,6 +37,7 @@ function normalizePrefs(parsed: Partial<HandbookViewPreferences>): HandbookViewP
   return {
     hiddenStatuses: [...new Set(hidden)],
     showStatusUi: parsed.showStatusUi !== false,
+    viewMode: isViewMode(parsed.viewMode) ? parsed.viewMode : "admin",
   };
 }
 
@@ -61,6 +69,7 @@ export function parseViewPreferencesCookie(
   return normalizePrefs({
     hiddenStatuses: parsed.hiddenStatuses,
     showStatusUi: parsed.showStatusUi,
+    viewMode: parsed.viewMode,
   });
 }
 

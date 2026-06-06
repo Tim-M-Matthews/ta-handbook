@@ -1,6 +1,8 @@
 ---
 title: "TheraNest"
-order: 110
+roles:
+  - staff
+order: 50
 description: "Step-by-step TheraNest workflows and tutorial videos."
 ---
 

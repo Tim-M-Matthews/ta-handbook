@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { authBypassLabel, isAuthBypassed } from "../lib/dev-auth";
 import { firstNameFromDisplay } from "../lib/display-name";
 import { categoryChromeOnBrand, categoryChromeSwatch } from "../lib/category-chrome";
+import { viewPreferencesFromRequest } from "../lib/handbook-request";
 import { userIsAdmin } from "../lib/roles";
 
 interface Props {
@@ -42,6 +43,8 @@ const accountMenuTitle = bypass
   ? authBypassLabel()
   : [email, roles.length ? roles.join(", ") : null].filter(Boolean).join(" — ");
 const showSettingsLink = userIsAdmin(roles);
+const viewPrefs = viewPreferencesFromRequest(Astro.cookies, email, roles);
+const previewAsStaff = showSettingsLink && viewPrefs.viewMode === "staff";
 ---
 
 <!doctype html>
@@ -179,6 +182,16 @@ const showSettingsLink = userIsAdmin(roles);
       {showHeaderSearch ? (
         <script is:inline src="/js/handbook-header-search.js" defer></script>
       ) : null}
+      {
+        previewAsStaff ? (
+          <div class="staff-preview-banner" role="status">
+            <p class="staff-preview-banner__text">
+              You are previewing <strong>staff view</strong> — only staff-accessible categories are shown; page status is ignored.
+              <a href="/settings">Switch to admin view</a>
+            </p>
+          </div>
+        ) : null
+      }
       <main class="shell__main">
         <slot />
         {

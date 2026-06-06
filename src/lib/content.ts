@@ -11,6 +11,11 @@ import {
   subcategoryTitleForPair,
 } from "./subcategories";
 import { parsePageStatus, userCanViewPageByStatus, type PageStatus } from "./page-status";
+import {
+  defaultHandbookViewOptions,
+  rolesForHandbookView,
+  type HandbookViewOptions,
+} from "./handbook-view-options";
 import { userCanViewPage } from "./roles";
 
 export type HandbookMeta = {
@@ -123,17 +128,23 @@ function metaFromMatter(
   };
 }
 
-/** Category, page roles, status gates, and per-user hidden statuses. */
+/** Category, page roles, status gates, and per-user view options. */
 export function handbookPageVisibleToUser(
   userRoles: string[],
   meta: HandbookMeta,
-  hiddenStatuses: PageStatus[] = [],
+  view: HandbookViewOptions = defaultHandbookViewOptions(),
 ): boolean {
   const cat = categoryDefForId(meta.categoryId);
+  const roles = rolesForHandbookView(userRoles, view);
   return (
-    userCanViewPage(userRoles, cat.roles) &&
-    userCanViewPage(userRoles, meta.roles) &&
-    userCanViewPageByStatus(userRoles, meta.status, hiddenStatuses)
+    userCanViewPage(roles, cat.roles) &&
+    userCanViewPage(roles, meta.roles) &&
+    userCanViewPageByStatus(
+      userRoles,
+      meta.status,
+      view.hiddenStatuses,
+      view.previewAsStaff,
+    )
   );
 }
 
@@ -184,9 +195,9 @@ export function groupPagesBySubcategory(
 
 export function homeSectionsForRoles(
   userRoles: string[],
-  hiddenStatuses: PageStatus[] = [],
+  view: HandbookViewOptions = defaultHandbookViewOptions(),
 ): HandbookHomeSection[] {
-  const pages = listMetaForRoles(userRoles, hiddenStatuses);
+  const pages = listMetaForRoles(userRoles, view);
   const catOrder: string[] = [];
   const seen = new Set<string>();
   for (const p of pages) {
@@ -207,11 +218,11 @@ export function homeSectionsForRoles(
 
 export function listMetaForRoles(
   userRoles: string[],
-  hiddenStatuses: PageStatus[] = [],
+  view: HandbookViewOptions = defaultHandbookViewOptions(),
 ): HandbookMeta[] {
   const metas: HandbookMeta[] = [];
   for (const doc of docsBySlug.values()) {
-    if (!handbookPageVisibleToUser(userRoles, doc, hiddenStatuses)) continue;
+    if (!handbookPageVisibleToUser(userRoles, doc, view)) continue;
     metas.push({
       slug: doc.slug,
       title: doc.title,
@@ -264,24 +275,22 @@ export function subcategoryExistsInSite(
 export function listMetaForCategory(
   userRoles: string[],
   categoryParam: string,
-  hiddenStatuses: PageStatus[] = [],
+  view: HandbookViewOptions = defaultHandbookViewOptions(),
 ): HandbookMeta[] {
   const want = resolveCategoryId(categoryParam);
-  return listMetaForRoles(userRoles, hiddenStatuses).filter((m) => m.categoryId === want);
+  return listMetaForRoles(userRoles, view).filter((m) => m.categoryId === want);
 }
 
 export function listMetaForSubcategory(
   userRoles: string[],
   categoryParam: string,
   subcategoryParam: string,
-  hiddenStatuses: PageStatus[] = [],
+  view: HandbookViewOptions = defaultHandbookViewOptions(),
 ): HandbookMeta[] {
   const cat = resolveCategoryId(categoryParam);
   const sub = subcategoryParam.trim();
   if (!sub || sub.includes("..") || sub.includes("/")) return [];
-  return listMetaForCategory(userRoles, cat, hiddenStatuses).filter(
-    (m) => m.subcategoryId === sub,
-  );
+  return listMetaForCategory(userRoles, cat, view).filter((m) => m.subcategoryId === sub);
 }
 
 /** Distinct category ids for sitemap and routing. */
@@ -328,10 +337,10 @@ export type SearchRow = HandbookMeta & {
 
 export function searchRowsForRoles(
   userRoles: string[],
-  hiddenStatuses: PageStatus[] = [],
+  view: HandbookViewOptions = defaultHandbookViewOptions(),
 ): SearchRow[] {
   const rows: SearchRow[] = [];
-  for (const meta of listMetaForRoles(userRoles, hiddenStatuses)) {
+  for (const meta of listMetaForRoles(userRoles, view)) {
     const doc = getDocBySlug(meta.slug);
     if (!doc) continue;
     rows.push({

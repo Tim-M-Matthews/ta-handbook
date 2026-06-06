@@ -33,6 +33,45 @@ function isInitiallyVisible(status: (typeof PAGE_STATUSES)[number]): boolean {
 
   <form id="handbook-settings-form" class="handbook-settings" data-user-email={email}>
     <fieldset class="handbook-settings__fieldset">
+      <legend class="handbook-settings__legend">Handbook view</legend>
+      <ul class="handbook-settings__list" role="list">
+        <li class="handbook-settings__item">
+          <label class="handbook-settings__label">
+            <input
+              type="radio"
+              class="handbook-settings__radio"
+              name="handbook-view-mode"
+              id="handbook-view-admin"
+              value="admin"
+              checked={initialPrefs.viewMode === "admin"}
+            />
+            <span class="handbook-settings__label-text">
+              <strong>Admin view</strong> — full category access; use status options below to filter by to-do, draft, or complete
+            </span>
+          </label>
+        </li>
+        <li class="handbook-settings__item">
+          <label class="handbook-settings__label">
+            <input
+              type="radio"
+              class="handbook-settings__radio"
+              name="handbook-view-mode"
+              id="handbook-view-staff"
+              value="staff"
+              checked={initialPrefs.viewMode === "staff"}
+            />
+            <span class="handbook-settings__label-text">
+              <strong>Staff view</strong> — preview staff category access (page status is ignored)
+            </span>
+          </label>
+        </li>
+      </ul>
+      <p class="handbook-settings__hint handbook-settings__hint--nested">
+        Staff view shows only staff-accessible categories and ignores publish status. Status indicators and page visibility apply only in admin view.
+      </p>
+    </fieldset>
+
+    <fieldset class="handbook-settings__fieldset handbook-settings__fieldset--spaced" data-admin-view-only hidden={initialPrefs.viewMode === "staff"}>
       <legend class="handbook-settings__legend">Status indicators</legend>
       <ul class="handbook-settings__list" role="list">
         <li class="handbook-settings__item">
@@ -54,7 +93,7 @@ function isInitiallyVisible(status: (typeof PAGE_STATUSES)[number]): boolean {
       </p>
     </fieldset>
 
-    <fieldset class="handbook-settings__fieldset handbook-settings__fieldset--spaced">
+    <fieldset class="handbook-settings__fieldset handbook-settings__fieldset--spaced" data-admin-view-only hidden={initialPrefs.viewMode === "staff"}>
       <legend class="handbook-settings__legend">Page visibility</legend>
       <ul class="handbook-settings__list" role="list">
         {
@@ -77,10 +116,10 @@ function isInitiallyVisible(status: (typeof PAGE_STATUSES)[number]): boolean {
         }
       </ul>
     </fieldset>
-    <p class="handbook-settings__hint">
+    <p class="handbook-settings__hint" data-admin-view-only hidden={initialPrefs.viewMode === "staff"}>
       Uncheck a status to hide those pages from your view. To-do and draft remain hidden from non-admin users.
     </p>
-    <button type="button" class="btn btn--small" id="handbook-settings-reset">
+    <button type="button" class="btn btn--small" id="handbook-settings-reset" data-admin-view-only hidden={initialPrefs.viewMode === "staff"}>
       Show all page statuses
     </button>
   </form>

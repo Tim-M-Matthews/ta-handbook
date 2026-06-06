@@ -7,12 +7,17 @@ import {
 } from "./handbook-view-preferences";
 import { PAGE_STATUSES, type PageStatus } from "./page-status";
 
+function isViewMode(value: unknown): value is HandbookViewPreferences["viewMode"] {
+  return value === "admin" || value === "staff";
+}
+
 function normalizePrefs(raw: Partial<HandbookViewPreferences>): HandbookViewPreferences {
   return {
     hiddenStatuses: (raw.hiddenStatuses ?? []).filter((s): s is PageStatus =>
       (PAGE_STATUSES as string[]).includes(s),
     ),
     showStatusUi: raw.showStatusUi !== false,
+    viewMode: isViewMode(raw.viewMode) ? raw.viewMode : "admin",
   };
 }
 
@@ -89,6 +94,16 @@ export function mountHandbookSettingsPage(): void {
     const showUiInput = form.querySelector<HTMLInputElement>("#handbook-show-status-ui");
     if (showUiInput) showUiInput.checked = prefs.showStatusUi;
 
+    const adminViewInput = form.querySelector<HTMLInputElement>("#handbook-view-admin");
+    const staffViewInput = form.querySelector<HTMLInputElement>("#handbook-view-staff");
+    if (adminViewInput) adminViewInput.checked = prefs.viewMode === "admin";
+    if (staffViewInput) staffViewInput.checked = prefs.viewMode === "staff";
+
+    const adminOnlySections = form.querySelectorAll<HTMLElement>("[data-admin-view-only]");
+    for (const section of adminOnlySections) {
+      section.hidden = prefs.viewMode === "staff";
+    }
+
     for (const status of PAGE_STATUSES) {
       const input = form.querySelector<HTMLInputElement>(
         `input[data-status="${status}"]`,
@@ -118,7 +133,16 @@ export function mountHandbookSettingsPage(): void {
 
   form.addEventListener("change", (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLInputElement) || t.type !== "checkbox") return;
+    if (!(t instanceof HTMLInputElement)) return;
+
+    if (t.name === "handbook-view-mode" && t.type === "radio") {
+      const mode = t.value === "staff" ? "staff" : "admin";
+      prefs = { ...prefs, viewMode: mode };
+      void persistAndReload();
+      return;
+    }
+
+    if (t.type !== "checkbox") return;
 
     if (t.id === "handbook-show-status-ui") {
       prefs = { ...prefs, showStatusUi: t.checked };

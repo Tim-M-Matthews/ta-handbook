@@ -1,6 +1,8 @@
 ---
 title: "Client Lifecycle"
-order: 90
+roles:
+  - staff
+order: 40
 description: "The full client journey from inquiry to discharge."
 ---
 
